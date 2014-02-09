@@ -1,0 +1,4 @@
+bin_PROGRAMS=PIC
+PIC_SOURCES=PIC.c gpio_dummy.c
+AM_CFLAGS=-DTEST_BUILD
+
