@@ -64,6 +64,9 @@ double Y_limit = -1; // " " same for Y-axis
  */
 uint32_t daughter = 0x0;
 
+// lex-specific, for debugging
+int lines = 0;
+
 %}
 
 %s MOVEMENT
@@ -87,26 +90,29 @@ point "."
 %%
 
 <INITIAL>{general}"0"?"1" {BEGIN MOVEMENT;}
+<INITIAL>{general}"2""8" {BEGIN MOVEMENT;}
 <INITIAL>{misc}"0"?"3"{whitespace}*{newline}+{misc}"0"?"5" ;
 <INITIAL>{misc}"0"?"3" {laseroff();}
 <INITIAL>{misc}"0"?"5" {laseron();}
 <INITIAL>{misc}"0"?"2" {yyterminate();}
 
-<MOVEMENT>{xaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN X;}
-<MOVEMENT>{yaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Y;}
-<MOVEMENT>{zaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Z;}
-<MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
-<MOVEMENT>{newline} {axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{xaxis}{digit}+({point}{digit}+)? {yyless(1);BEGIN X;}
+<MOVEMENT>{yaxis}{digit}+({point}{digit}+)? {yyless(1);BEGIN Y;}
+<MOVEMENT>{zaxis}{digit}+({point}{digit}+)? {yyless(1);BEGIN Z;}
+<MOVEMENT>{faxis}{digit}+({point}{digit}+)? ;
+<MOVEMENT>{newline} {axis_updated();lines++;BEGIN INITIAL;}
 
 <X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Z>{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
-<X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit?");BEGIN MOVEMENT;}
+<X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", lines);BEGIN MOVEMENT;}
 
 <MOVEMENT,INITIAL>{whitespace}+ ;
-<INITIAL>{general}{digit}+ {DEBUG("This unknown general is a major pain: %s", yytext);}
-<INITIAL>{misc}{digit}+ {DEBUG("I NEED AN ADULT: %s", yytext);}
-<INITIAL,MOVEMENT,X,Y,Z>. {DEBUG("I didn't sign up for this: '%s'", yytext);}
+<INITIAL>{general}{digit}+ {DEBUG("This unknown general is a major pain: '%s' (line %d)", yytext, lines);}
+<INITIAL>{misc}{digit}+ {DEBUG("I NEED AN ADULT: '%s' (line %d) ", yytext, lines);}
+<INITIAL,X,Y,Z>{newline} {lines++;}
+<INITIAL,MOVEMENT,X,Y,Z>"\r" ;
+<INITIAL,MOVEMENT,X,Y,Z>. {DEBUG("I didn't sign up for this shit: '%s' on line %d", yytext, lines);}
 
 %%
 
