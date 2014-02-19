@@ -150,6 +150,7 @@ int i2cinit() {
     // initialize the bus with the "hello" handshake:
     int op = OP_HELLO;
     if(write(i2cfile, &op, sizeof(int)) < 0) err++;
+    sleep(1);
     if(read(i2cfile, &op, sizeof(int))) err++;
     if(op != OP_HELLO) {
         err++;
