@@ -1,0 +1,2 @@
+#!/bin/bash
+lex -t PIC.l > PIC.c && gcc -o PIC PIC.c gpio_dummy.c -ll -lfl
