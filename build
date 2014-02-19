@@ -1,2 +1,3 @@
 #!/bin/bash
+# Use this file when building locally
 lex -t PIC.l > PIC.c && gcc -o PIC PIC.c gpio_dummy.c -ll -lfl

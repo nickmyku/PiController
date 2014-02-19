@@ -10,6 +10,7 @@
 
 // misc. setup stuff
 #define SLAVE_BUS_ID 0x04
+#define MASTER_BUS_ID 0x01
 
 /*
  * ***** COMMANDS *****

@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 /*
  * Rudimentary pre-execution...stuff.
  */
-int sanity(int argc, const char **argv) {
+int sanity(int argc, char **argv) {
 	if(wiringPiSetup() == -1) {
 		eprintf("Pin setup failed!\n(Do you even root, bro?)\n");
 		exit(1);
@@ -174,11 +174,9 @@ void printDebug(const char *fmt, const int line, const char *file, ...) {
     va_list list;
     va_start(list, file);
 
-    int nchars = (int) (strchr(func, '(') - func);
-
-	if(DEBUG_FLAG) {
-    	fprintf(stderr, "Debug: %.*s on line %d of file %s: ", nchars, line, file);
-    	vfprintf(stderr, fmt, list);
+    if(DEBUG_FLAG) {
+      fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
+      vfprintf(stderr, fmt, list);
     }
     va_end(list);
 }

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Use this file when building on the actual Pi
+lex -t PIC.l > PIC.c && gcc -DTEST_BUILD -o PIC PIC.c -ll -lfl -lwiringPi
