@@ -148,7 +148,7 @@ int i2cinit() {
     DEBUG("Master bus initialized, or should be (%d)", err);
     
     // initialize the bus with the "hello" handshake:
-    if(wiringPiI2CWrite(i2cfile, OP_HELLO) < 0) err++;
+    if(write(i2cfile, OP_HELLO, sizeof(int)) < 0) err++;
     if(wiringPiI2CRead(i2cfile) != OP_HELLO) err++;
     DEBUG("Handshake results: %d, circle-jerk status", err);
     
