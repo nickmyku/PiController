@@ -151,7 +151,10 @@ int i2cinit() {
     int op = OP_HELLO;
     if(write(i2cfile, &op, sizeof(int)) < 0) err++;
     read(i2cfile, &op, sizeof(int));
-    if(op != OP_HELLO) err++;
+    if(op != OP_HELLO) {
+        err++;
+        DEBUG("Slave said: %d", op);
+    }
     DEBUG("Handshake results: %d, circle-jerk status", err);
     
     if(err == 0) return 0;
