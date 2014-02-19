@@ -16,7 +16,7 @@ boolean halt = false;
 void setup() {
 #ifdef SLAVE_DEBUG
   Serial.begin(9600);
-  Serial.println("Serial port initialized")
+  Serial.println("Serial port initialized");
 #endif
   Wire.begin(SLAVE_BUS_ID);
   Wire.onReceive(receiveData);
