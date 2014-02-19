@@ -143,7 +143,7 @@ void calibrate() {
 int i2cinit() {
     int err = 0;
     
-    i2cfile = wiringPiI2CSetup(MASTER_BUS_ID);
+    i2cfile = wiringPiI2CSetup(SLAVE_BUS_ID);
     if(i2cfile == -1) err++;
     DEBUG("Master bus initialized, or should be (%d)", err);
     
