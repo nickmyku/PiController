@@ -359,8 +359,8 @@ static void yy_fatal_error (yyconst char msg[]  );
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
 
-#define YY_NUM_RULES 17
-#define YY_END_OF_BUFFER 18
+#define YY_NUM_RULES 18
+#define YY_END_OF_BUFFER 19
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -371,8 +371,8 @@ struct yy_trans_info
 static yyconst flex_int16_t yy_accept[61] =
     {   0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-       18,   16,   15,   17,   16,   16,   10,   16,   16,   16,
-       16,   14,   16,   16,   16,   15,    0,    1,    0,    5,
+       19,   17,   16,   15,   17,   17,   10,   17,   17,   17,
+       17,   14,   17,   17,   17,   16,    0,    1,    0,    5,
         3,    4,    0,    0,    0,    0,   14,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,   11,
        12,   13,    0,    9,    6,    7,    8,    0,    2,    0
@@ -534,12 +534,13 @@ double pos_y = -1;
 double pos_z = -1;
 double X_limit = -1; // X-axis time (in ms) from 0 to its limit at full power
 double Y_limit = -1; // " " same for Y-axis
+int dline = 0;
 
 
 
 
 
-#line 543 "<stdout>"
+#line 544 "<stdout>"
 
 #define INITIAL 0
 #define MOVEMENT 1
@@ -725,10 +726,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 69 "PIC.l"
+#line 70 "PIC.l"
 
 
-#line 732 "<stdout>"
+#line 733 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -813,92 +814,98 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 71 "PIC.l"
+#line 72 "PIC.l"
 {BEGIN MOVEMENT;}
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 72 "PIC.l"
+#line 73 "PIC.l"
 ;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 73 "PIC.l"
+#line 74 "PIC.l"
 {laseroff();}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 74 "PIC.l"
+#line 75 "PIC.l"
 {laseron();}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 75 "PIC.l"
+#line 76 "PIC.l"
 {yyterminate();}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 77 "PIC.l"
+#line 78 "PIC.l"
 {yyless(1);BEGIN X;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 78 "PIC.l"
+#line 79 "PIC.l"
 {yyless(1);BEGIN Y;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 79 "PIC.l"
+#line 80 "PIC.l"
 {yyless(1);BEGIN Z;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 80 "PIC.l"
+#line 81 "PIC.l"
 ;
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 81 "PIC.l"
-{axis_updated();BEGIN INITIAL;}
+#line 82 "PIC.l"
+{dline++;axis_updated();BEGIN INITIAL;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 83 "PIC.l"
+#line 84 "PIC.l"
 {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 84 "PIC.l"
+#line 85 "PIC.l"
 {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 85 "PIC.l"
+#line 86 "PIC.l"
 {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 86 "PIC.l"
-{DEBUG("What, did Charlie Sheen write this shit?");BEGIN MOVEMENT;}
+#line 87 "PIC.l"
+{DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 	YY_BREAK
 case 15:
+/* rule 15 can match eol */
 YY_RULE_SETUP
-#line 88 "PIC.l"
-;
+#line 89 "PIC.l"
+{dline++;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 89 "PIC.l"
-{DEBUG("I didn't sign up for this: '%s'", yytext);}
+#line 90 "PIC.l"
+;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 91 "PIC.l"
+{DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
+	YY_BREAK
+case 18:
+YY_RULE_SETUP
+#line 93 "PIC.l"
 ECHO;
 	YY_BREAK
-#line 902 "<stdout>"
+#line 909 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(MOVEMENT):
 case YY_STATE_EOF(X):
@@ -1899,7 +1906,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 91 "PIC.l"
+#line 93 "PIC.l"
 
 
 

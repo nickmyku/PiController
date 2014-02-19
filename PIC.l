@@ -45,6 +45,7 @@ double pos_y = -1;
 double pos_z = -1;
 double X_limit = -1; // X-axis time (in ms) from 0 to its limit at full power
 double Y_limit = -1; // " " same for Y-axis
+int dline = 0;
 
 %}
 
@@ -78,15 +79,16 @@ point "."
 <MOVEMENT>{yaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Y;}
 <MOVEMENT>{zaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Z;}
 <MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
-<MOVEMENT>{newline} {axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{newline} {dline++;axis_updated();BEGIN INITIAL;}
 
 <X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Z>{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
-<X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit?");BEGIN MOVEMENT;}
+<X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 
+<INITIAL,X,Y,Z>{newline} {dline++;}
 <MOVEMENT,INITIAL>{whitespace}+ ;
-<INITIAL,MOVEMENT,X,Y,Z>. {DEBUG("I didn't sign up for this: '%s'", yytext);}
+<INITIAL,MOVEMENT,X,Y,Z>. {DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
 
 %%
 
