@@ -14,11 +14,12 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <sys/stat.h>
 #include "y.PIC.h"
+#include "slave/commands.h"
 
 #define DEBUG_FLAG 1
+#define COMPILED_FILE "/tmp/PIC.o"
 
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
@@ -26,6 +27,7 @@
 #else
 // real deal, include real GPIO library files:
 #include <wiringPi.h>
+#include <wiringPiI2C.h>
 #endif
 
 // use this to provide dev-only feedback. See printDebug() too. 
@@ -35,37 +37,14 @@ do {\
 } while(0)
 
 // globals (don't hate):
-double pos_x = -1; // these are all global state variables for positions
+uint32_t daughter = 0x0; // daughter board shift register
+FILE *fcomp; // compiled output (/tmp file)
+int i2cfile;
+double pos_x = -1;
 double pos_y = -1;
 double pos_z = -1;
-double last_pos_x = 0;
-double last_pos_y = 0;
-double last_pos_z = 0;
-
-FILE *fcomp; // compiled output (/tmp file)
 double X_limit = -1; // X-axis time (in ms) from 0 to its limit at full power
 double Y_limit = -1; // " " same for Y-axis
-
-/*
- * This is the internal state variable for the daughterboard's shift register.
- * It is a 32-bit unsigned binary number with bits as follows:
- * 
- * Bit : Description
- * 0   : X step pin
- * 1   : X direction pin
- * 2   : Y step pin
- * 3   : Y dir pin
- * 4-7 : (reserved)
- * 8   : Laser pin (PWM for power control) 
- * 9-31: (reserved)
- *
- * The limit switches will be read separately, likely OR'd together to a 
- * single dedicated input pin until a serial-bus solution is designed later.
- */
-uint32_t daughter = 0x0;
-
-// lex-specific, for debugging
-int lines = 0;
 
 %}
 
@@ -90,29 +69,24 @@ point "."
 %%
 
 <INITIAL>{general}"0"?"1" {BEGIN MOVEMENT;}
-<INITIAL>{general}"2""8" {BEGIN MOVEMENT;}
 <INITIAL>{misc}"0"?"3"{whitespace}*{newline}+{misc}"0"?"5" ;
 <INITIAL>{misc}"0"?"3" {laseroff();}
 <INITIAL>{misc}"0"?"5" {laseron();}
 <INITIAL>{misc}"0"?"2" {yyterminate();}
 
-<MOVEMENT>{xaxis}{digit}+({point}{digit}+)? {yyless(1);BEGIN X;}
-<MOVEMENT>{yaxis}{digit}+({point}{digit}+)? {yyless(1);BEGIN Y;}
-<MOVEMENT>{zaxis}{digit}+({point}{digit}+)? {yyless(1);BEGIN Z;}
-<MOVEMENT>{faxis}{digit}+({point}{digit}+)? ;
-<MOVEMENT>{newline} {axis_updated();lines++;BEGIN INITIAL;}
+<MOVEMENT>{xaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN X;}
+<MOVEMENT>{yaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Y;}
+<MOVEMENT>{zaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Z;}
+<MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
+<MOVEMENT>{newline} {axis_updated();BEGIN INITIAL;}
 
 <X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Z>{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
-<X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", lines);BEGIN MOVEMENT;}
+<X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit?");BEGIN MOVEMENT;}
 
 <MOVEMENT,INITIAL>{whitespace}+ ;
-<INITIAL>{general}{digit}+ {DEBUG("This unknown general is a major pain: '%s' (line %d)", yytext, lines);}
-<INITIAL>{misc}{digit}+ {DEBUG("I NEED AN ADULT: '%s' (line %d) ", yytext, lines);}
-<INITIAL,X,Y,Z>{newline} {lines++;}
-<INITIAL,MOVEMENT,X,Y,Z>"\r" ;
-<INITIAL,MOVEMENT,X,Y,Z>. {DEBUG("I didn't sign up for this shit: '%s' on line %d", yytext, lines);}
+<INITIAL,MOVEMENT,X,Y,Z>. {DEBUG("I didn't sign up for this: '%s'", yytext);}
 
 %%
 
@@ -124,32 +98,31 @@ int main(int argc, char **argv) {
 	calibrate();
 	yylex();
 	printOut();
-	cleanup();
 	return EXIT_SUCCESS;
 }
 
 /*
  * Rudimentary pre-execution...stuff.
  */
-int sanity(int argc, char **argv) {
+int sanity(int argc, const char **argv) {
 	if(wiringPiSetup() == -1) {
-		eprintf("Pin setup failed!\n(Do you even root, bro?)");
+		eprintf("Pin setup failed!\n(Do you even root, bro?)\n");
 		exit(1);
 	}
 
 	if(argc <= 1) {
-		eprintf("Your argument is invalid.\nAnd you're a towel.");
+		eprintf("Your argument is invalid.\nAnd you're a towel.\n");
 		exit(1);
 	}
 	
 	FILE *fp = NULL;
 	if((fp = fopen(argv[1], "r")) == NULL) {
-		eprintf("That file doesn't even exist.\nNice try, asshole.");
+		eprintf("That file doesn't even exist.\nNice try, asshole.\n");
 		exit(1);
 	}
 	yyin = fp;
 	
-	if((fcomp = fopen("/tmp/PIC.o", "wb")) == NULL) {
+	if((fcomp = fopen(COMPILED_FILE, "wb")) == NULL) {
 		eprintf("Even Helen Keller knows you should be able to write to /tmp, and she's fucking dead.\n");
 		exit(1);
 	}
@@ -159,25 +132,37 @@ int sanity(int argc, char **argv) {
  * Calibrate the machine and sense timing values, for later
  */
 void calibrate() {
-	// TODO: time() full power from 0 till a limit signal for X & Y
-	X_limit = 10.0; // dummy 
-	Y_limit = 10.0; // " " same for Y-axis
 	return;
+}
+
+/*
+ * Initialize the i2c bus the a master node
+ */
+int i2cinit() {
+    int err = 0;
+    
+    i2cfile = wiringPiI2CSetup(MASTER_BUS_ID);
+    if(i2cfile == -1) err++;
+    
+    // initialize the bus with the "hello" handshake:
+    if(wiringPiI2CWrite(i2cfile, OP_HELLO) < 0) err++;
+    if(wiringPiI2CRead(i2cfile) != OP_HELLO) err++;
+    
+    if(err == 0) return 0;
+    // else
+    DEBUG("%d errors occurred while initializing the i2c bus.\nHave you considered stripping as a profession instead?", err);
+    return -1;
 }
 
 /*
  * Prints the actual deliverable, using compiled Gcode generated via Lex
  */
 int printOut() {
-	DEBUG("Beginning print process. Don protective eyewear. Seriously.");
-	fclose(fcomp);
-	fcomp = fopen("/tmp/PIC.o","rb");
-	rewind(fcomp); // just in case, you know?
-	while(!feof(fcomp)) {
-		// TODO: fscanf(fcomp,"%" SCNxN "d", 32, &daughter);
-		// digitalWrite(1, (daughter & 2));
-		break;	
-	}
+    if(i2cinit() == -1) {
+        eprintf("i2c failed to initialize.\nTake a shot every time you see this.");
+        return -1;
+    }
+    
 	return 0;
 }
 
@@ -189,10 +174,11 @@ void printDebug(const char *fmt, const int line, const char *file, ...) {
     va_list list;
     va_start(list, file);
 
+    int nchars = (int) (strchr(func, '(') - func);
+
 	if(DEBUG_FLAG) {
-    	fprintf(stderr, "Debug: line %d of file %s: ", line, file);
+    	fprintf(stderr, "Debug: %.*s on line %d of file %s: ", nchars, line, file);
     	vfprintf(stderr, fmt, list);
-	fputc('\n', stderr);
     }
     va_end(list);
 }
@@ -201,7 +187,7 @@ void printDebug(const char *fmt, const int line, const char *file, ...) {
  * Error function (called regardless of DEBUG flag to let user know they fucked up)
  */
 void eprintf(const char *fmt, ...) {
-    va_list list;
+ 	va_list list;
     va_start(list, fmt);
     char *prefix = "ERROR: ";
     
@@ -216,11 +202,7 @@ void eprintf(const char *fmt, ...) {
  * Called whenever the armature is to be moved (pos_x-z updated)
  */
 void axis_updated() {
-		
-
-	last_pos_x = pos_x;
-	last_pos_y = pos_y;
-	last_pos_z = pos_z;
+	
 	pos_x = pos_y = pos_z = -1;
 }
 
@@ -234,17 +216,5 @@ int laser(double power) {
 		return -1;
 	}
 	
-	return 0;
-}
-
-/*
- * Gracefully exit, leaving the system in one piece. One.
- */
-int cleanup() {
-	DEBUG("Finishing up...");
-	laseroff();
-	fclose(yyin);
-	fclose(fcomp);
-	// TODO: reset to <0,0,0>
 	return 0;
 }
