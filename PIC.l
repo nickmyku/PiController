@@ -150,7 +150,8 @@ int i2cinit() {
     // initialize the bus with the "hello" handshake:
     int op = OP_HELLO;
     if(write(i2cfile, &op, sizeof(int)) < 0) err++;
-    if(wiringPiI2CRead(i2cfile) != OP_HELLO) err++;
+    read(i2cfile, &op, sizeof(int));
+    if(op != OP_HELLO) err++;
     DEBUG("Handshake results: %d, circle-jerk status", err);
     
     if(err == 0) return 0;
