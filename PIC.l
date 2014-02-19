@@ -177,6 +177,7 @@ void printDebug(const char *fmt, const int line, const char *file, ...) {
     if(DEBUG_FLAG) {
       fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
       vfprintf(stderr, fmt, list);
+      putc('\n',stderr);
     }
     va_end(list);
 }
