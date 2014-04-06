@@ -504,6 +504,8 @@ char *yytext;
 #include <stdarg.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <pthread.h>
 #include "y.PIC.h"
 #include "slave/commands.h"
 
@@ -529,18 +531,24 @@ do {\
 uint32_t daughter = 0x0; // daughter board shift register
 FILE *fcomp; // compiled output (/tmp file)
 int i2cfile;
-double pos_x = -1;
-double pos_y = -1;
-double pos_z = -1;
+double pos_x = 0;
+double pos_y = 0;
+double pos_z = 0;
+double last_pos_x = 0;
+double last_pos_y = 0;
+double last_pos_z = 0;
 double X_limit = -1; // X-axis time (in ms) from 0 to its limit at full power
 double Y_limit = -1; // " " same for Y-axis
+double step_divisor = 1; // delta/step_divisor = #steps to move
 int dline = 0;
+char x_ready = 0;
+char y_ready = 0;
 
 
 
 
 
-#line 544 "<stdout>"
+#line 552 "<stdout>"
 
 #define INITIAL 0
 #define MOVEMENT 1
@@ -726,10 +734,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 70 "PIC.l"
+#line 78 "PIC.l"
 
 
-#line 733 "<stdout>"
+#line 741 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -814,98 +822,98 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 72 "PIC.l"
+#line 80 "PIC.l"
 {BEGIN MOVEMENT;}
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 73 "PIC.l"
+#line 81 "PIC.l"
 ;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 74 "PIC.l"
+#line 82 "PIC.l"
 {laseroff();}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 75 "PIC.l"
+#line 83 "PIC.l"
 {laseron();}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 76 "PIC.l"
+#line 84 "PIC.l"
 {yyterminate();}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 78 "PIC.l"
+#line 86 "PIC.l"
 {yyless(1);BEGIN X;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 79 "PIC.l"
+#line 87 "PIC.l"
 {yyless(1);BEGIN Y;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 80 "PIC.l"
+#line 88 "PIC.l"
 {yyless(1);BEGIN Z;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 81 "PIC.l"
+#line 89 "PIC.l"
 ;
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 82 "PIC.l"
+#line 90 "PIC.l"
 {dline++;axis_updated();BEGIN INITIAL;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 84 "PIC.l"
+#line 92 "PIC.l"
 {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 85 "PIC.l"
+#line 93 "PIC.l"
 {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 86 "PIC.l"
+#line 94 "PIC.l"
 {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 87 "PIC.l"
+#line 95 "PIC.l"
 {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 	YY_BREAK
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 89 "PIC.l"
+#line 97 "PIC.l"
 {dline++;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 90 "PIC.l"
+#line 98 "PIC.l"
 ;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 91 "PIC.l"
+#line 99 "PIC.l"
 {DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 93 "PIC.l"
+#line 101 "PIC.l"
 ECHO;
 	YY_BREAK
-#line 909 "<stdout>"
+#line 917 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(MOVEMENT):
 case YY_STATE_EOF(X):
@@ -1906,7 +1914,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 93 "PIC.l"
+#line 101 "PIC.l"
 
 
 
@@ -1915,9 +1923,8 @@ void yyfree (void * ptr )
  */
 int main(int argc, char **argv) {
 	sanity(argc, argv);
-	calibrate();
 	yylex();
-	printOut();
+    pthread_exit(NULL);
 	return EXIT_SUCCESS;
 }
 
@@ -1958,33 +1965,41 @@ void calibrate() {
 /*
  * Initialize the i2c bus the a master node
  */
-int i2cinit() {
-    int err = 0;
-    
-    i2cfile = wiringPiI2CSetup(MASTER_BUS_ID);
-    if(i2cfile == -1) err++;
-    
-    // initialize the bus with the "hello" handshake:
-    if(wiringPiI2CWrite(i2cfile, OP_HELLO) < 0) err++;
-    if(wiringPiI2CRead(i2cfile) != OP_HELLO) err++;
-    
-    if(err == 0) return 0;
-    // else
-    DEBUG("%d errors occurred while initializing the i2c bus.\nHave you considered stripping as a profession instead?", err);
-    return -1;
-}
+//int i2cinit() {
+//    int err = 0;
+//    
+//    i2cfile = wiringPiI2CSetup(SLAVE_BUS_ID);
+//    if(i2cfile == -1) err++;
+//    DEBUG("Master bus initialized, or should be (%d)", err);
+//    
+//    // initialize the bus with the "hello" handshake:
+//    int op = OP_HELLO;
+//    if(write(i2cfile, &op, sizeof(int)) < 0) err++;
+//    sleep(1);
+//    if(read(i2cfile, &op, sizeof(int))) err++;
+//    if(op != OP_HELLO) {
+//        err++;
+//        DEBUG("Slave said: %d", op);
+//    }
+//    DEBUG("Handshake results: %d, circle-jerk status", err);
+//    
+//    if(err == 0) return 0;
+//    // else
+//    DEBUG("%d errors occurred while initializing the i2c bus.\nHave you considered stripping as a profession instead?", err);
+//    return -1;
+//}
 
 /*
  * Prints the actual deliverable, using compiled Gcode generated via Lex
  */
-int printOut() {
-    if(i2cinit() == -1) {
-        eprintf("i2c failed to initialize.\nTake a shot every time you see this.");
-        return -1;
-    }
-    
-	return 0;
-}
+//int printOut() {
+//    if(i2cinit() == -1) {
+//        eprintf("i2c failed to initialize.\nTake a shot every time you see this.");
+//        return -1;
+//    }
+//    
+//	return 0;
+//}
 
 /*
  * Prettyful debug function 
@@ -2016,13 +2031,79 @@ void eprintf(const char *fmt, ...) {
     
     va_end(list);
  }
- 
+
+/*
+ * Thread entry point for moving the Y axis simultaneously with the X axis
+ */
+void *simul_y(void *targv) {
+    int i;
+    int *argv;
+    
+    *argv = (int *)targv;
+    y_ready = 1;
+    while(x_ready == 0) ; // wait for x movement, should be brief
+    for(i = 0; i <= (int*)argv[0]; i++) {
+        digitalWrite(Y_PIN, 1);
+        digitalWrite(Y_PIN, 0);
+        //nanosleep((int)argv[1]);
+    }
+    
+    y_ready = 0;
+    pthread_exit(NULL);
+}
+
 /*
  * Called whenever the armature is to be moved (pos_x-z updated)
  */
 void axis_updated() {
-	
-	pos_x = pos_y = pos_z = -1;
+    double dx;
+    double dy;
+    double dz;
+    double steps_x;
+    double steps_y;
+    double steps_z;
+    int i;
+    
+    
+    dx = pos_x - last_pos_x;
+    dx = pos_y - last_pos_y;
+    dx = pos_z - last_pos_z;
+    last_pos_x = pos_x;
+    last_pos_y = pos_y;
+    last_pos_z = pos_z;
+    pos_x = pos_y = pos_z = -1;
+    
+    steps_x = 0;
+    steps_y = 0;
+    // steps_z = 
+    
+    if(steps_y) {
+        pthread_t y_thread;
+        int rc;
+        int argv[2];
+        
+        argv[0] = steps_y;
+        argv[1] = 1; // time delay between signals, to change speed...
+        rc = pthread_create(&y_thread, NULL, simul_y, (void *)argv);
+        if (rc){
+         eprintf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
+         pthread_exit(NULL);
+      }
+    }
+    
+    while(y_ready == 0 && steps_y != 0) ;
+    x_ready = 1;
+    
+    if(steps_x != 0) {
+        for(i = 0; i <= steps_x; i++) {
+            digitalWrite(X_PIN, 1);
+            digitalWrite(X_PIN, 0);
+            // msleep((int*)argv[1]);
+        }
+    }
+    
+    while(y_ready == 1 && steps_y != 0) ;
+    x_ready = 0;
 }
 
 /*

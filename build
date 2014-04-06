@@ -1,3 +1,3 @@
 #!/bin/bash
 # Use this file when building locally
-lex -t PIC.l > PIC.c && gcc -o PIC gpio_dummy.c PIC.c -ll -lfl
+lex -t PIC.l > PIC.c && gcc -o PIC gpio_dummy.c PIC.c -ll -lpthread -lfl
