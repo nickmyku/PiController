@@ -19,5 +19,6 @@
 int wiringPiSetup();
 void digitalWrite(int nope,int whocares);
 void pinMode(int ignored, int neglected);
+int digitalRead(int godie);
 
 #endif /* GPIO_DUMMY */

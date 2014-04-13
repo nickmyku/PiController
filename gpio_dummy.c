@@ -22,4 +22,8 @@ void pinMode(int ignored, int neglected) {
 	return;
 }
 
+int digitalRead(int godie) {
+    return 0;
+}
+
 #endif /* test build */

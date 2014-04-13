@@ -20,6 +20,9 @@
 #define X_DIR_PIN 1
 #define Y_DIR_PIN 3
 #define Z_DIR_PIN 5
+#define LIM_X 17
+#define LIM_Y 18
+#define LIM_Z 19
 
 /*
  * ***** COMMANDS *****

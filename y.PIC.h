@@ -52,5 +52,8 @@ int micromove(int axis, int microsteps);
 // last thing this program does - turn off pins, free memory, close files/sync
 void cleanup();
 
+// Limit switch watchdog thread
+void *lim_watchdog(void* ignored);
+
 #endif /* Y_PIC_H_ */
 

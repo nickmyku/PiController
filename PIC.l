@@ -44,7 +44,6 @@ do {\
 } while(0)
 
 // globals (don't hate):
-uint32_t daughter = 0x0; // daughter board shift register
 FILE *fcomp; // compiled output (/tmp file)
 int i2cfile;
 double pos_x = 0;
@@ -53,9 +52,6 @@ double pos_z = 0;
 double last_pos_x = 0;
 double last_pos_y = 0;
 double last_pos_z = 0;
-double X_limit = -1; // X-axis time (in ms) from 0 to its limit at full power
-double Y_limit = -1; // " " same for Y-axis
-double step_divisor = 1; // delta/step_divisor = #steps to move
 int dline = 0;
 char x_ready = 0;
 char y_ready = 0;
@@ -149,6 +145,34 @@ int sanity(int argc, char **argv) {
     pinMode(Y_DIR_PIN, OUTPUT);
     pinMode(Z_DIR_PIN, OUTPUT);
     pinMode(LASER_PIN, PWM_OUTPUT);
+    pinMode(LIM_X, INPUT);
+    pinMode(LIM_Y, INPUT);
+    pinMode(LIM_Z, INPUT);
+    
+    pthread_t lim_thread;
+    int rc = pthread_create(&lim_thread, NULL, lim_watchdog, (void *)NULL);
+    if (rc){
+        eprintf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
+        pthread_exit(NULL);
+    }
+}
+
+/*
+ * Watch over limit switches and yank the plug if one trips
+ */
+void *lim_watchdog(void* ignored) {
+    struct timespec watchdelay;
+    watchdelay.tv_nsec = 50000; // tweak as needed
+    
+    while(1) {
+        nanosleep(&watchdelay,NULL);
+        if(digitalRead(LIM_X) != 0 || digitalRead(LIM_Y) != 0 || digitalRead(LIM_Z) != 0) {
+            eprintf("LIMIT SWITCH DEPRESSED; SYSTEM SHUTTING DOWN COMMIT SEPUKKU NOW!!!");
+            exit(1);
+            pthread_exit(NULL);
+        }
+        pthread_yield_np();
+    }
 }
 
 /*
@@ -232,7 +256,12 @@ void eprintf(const char *fmt, ...) {
 /*
  * Thread entry point for moving the Y axis simultaneously with the X axis
  */
-struct timespec tim;
+struct timespec constdelay;
+struct timespec xdelay;
+struct timespec ydelay;
+//double coef_x; // how many more X than Y
+//double coef_y; // Y than X
+//double coef_threshold; // write when reached
 void *simul_y(void *targv) {
     int i;
     int *argv = (int *)targv;
@@ -240,9 +269,9 @@ void *simul_y(void *targv) {
     for(i = 0; i <= argv[0]; i++) {
         DEBUG("Writing Y signals...");
         digitalWrite(Y_PIN, 1);
-        nanosleep(&tim,NULL);
+        nanosleep(&constdelay,NULL);
         digitalWrite(Y_PIN, 0);
-        nanosleep(&tim,NULL);
+        nanosleep(&ydelay,NULL);
         pthread_yield_np(); 
     }
     
@@ -273,9 +302,11 @@ void axis_updated() {
     
     steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
     steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
-    tim.tv_nsec = NSEC_DELAY; // .5s, to stagged state changes
+    constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
+    xdelay.tv_nsec = ((steps_x > steps_y)?(abs(abs(steps_y)/abs(steps_x))):1)*NSEC_DELAY;
+    ydelay.tv_nsec = ((steps_x < steps_y)?(abs(abs(steps_x)/abs(steps_y))):1)*NSEC_DELAY;
     
-    DEBUG("Moving X %f steps at %f mm/s and Y %f steps at %f mm/s",dx,steps_x,dy,steps_y);
+    DEBUG("Moving X %f steps at %f mm/s (d. %f) and Y %f steps at %f mm/s (d. %f)",dx,steps_x,xdelay.tv_nsec,dy,steps_y,ydelay.tv_nsec);
     
     // directional pins
     if(dx > 0) {
@@ -308,9 +339,9 @@ void axis_updated() {
         for(i = 0; i <= steps_x; i++) {
             DEBUG("Writing X signals...");
             digitalWrite(X_PIN, 1);
-            nanosleep(&tim,NULL);
+            nanosleep(&constdelay,NULL);
             digitalWrite(X_PIN, 0);
-            nanosleep(&tim,NULL);
+            nanosleep(&xdelay,NULL);
             pthread_yield_np(); 
         }
     }
