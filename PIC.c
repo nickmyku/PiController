@@ -506,11 +506,14 @@ char *yytext;
 #include <sys/stat.h>
 #include <time.h>
 #include <pthread.h>
+#include <math.h>
+#include <unistd.h>
 #include "y.PIC.h"
 #include "slave/commands.h"
 
 #define DEBUG_FLAG 1
 #define COMPILED_FILE "/tmp/PIC.o"
+#define V_MAX 100 /* mm/min */
 
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
@@ -548,7 +551,7 @@ char y_ready = 0;
 
 
 
-#line 552 "<stdout>"
+#line 555 "<stdout>"
 
 #define INITIAL 0
 #define MOVEMENT 1
@@ -734,10 +737,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 78 "PIC.l"
+#line 81 "PIC.l"
 
 
-#line 741 "<stdout>"
+#line 744 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -822,98 +825,98 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 80 "PIC.l"
+#line 83 "PIC.l"
 {BEGIN MOVEMENT;}
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 81 "PIC.l"
+#line 84 "PIC.l"
 ;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 82 "PIC.l"
+#line 85 "PIC.l"
 {laseroff();}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 83 "PIC.l"
+#line 86 "PIC.l"
 {laseron();}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 84 "PIC.l"
+#line 87 "PIC.l"
 {yyterminate();}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 86 "PIC.l"
+#line 89 "PIC.l"
 {yyless(1);BEGIN X;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 87 "PIC.l"
+#line 90 "PIC.l"
 {yyless(1);BEGIN Y;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 88 "PIC.l"
+#line 91 "PIC.l"
 {yyless(1);BEGIN Z;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 89 "PIC.l"
+#line 92 "PIC.l"
 ;
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 90 "PIC.l"
-{dline++;axis_updated();BEGIN INITIAL;}
+#line 93 "PIC.l"
+{dline++;DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 92 "PIC.l"
-{pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
+#line 95 "PIC.l"
+{pos_x = strtod(yytext, NULL);DEBUG("X set to %f",pos_x);BEGIN MOVEMENT;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 93 "PIC.l"
+#line 96 "PIC.l"
 {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 94 "PIC.l"
+#line 97 "PIC.l"
 {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 95 "PIC.l"
+#line 98 "PIC.l"
 {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 	YY_BREAK
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 97 "PIC.l"
+#line 100 "PIC.l"
 {dline++;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 98 "PIC.l"
+#line 101 "PIC.l"
 ;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 99 "PIC.l"
+#line 102 "PIC.l"
 {DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 101 "PIC.l"
+#line 104 "PIC.l"
 ECHO;
 	YY_BREAK
-#line 917 "<stdout>"
+#line 920 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(MOVEMENT):
 case YY_STATE_EOF(X):
@@ -1914,7 +1917,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 101 "PIC.l"
+#line 104 "PIC.l"
 
 
 
@@ -2027,6 +2030,7 @@ void eprintf(const char *fmt, ...) {
     
     fprintf(stderr, prefix);
     vfprintf(stderr, fmt, list);
+#warning ignore the "format not a string literal" bullshit
     fputc('\n', stderr);
     
     va_end(list);
@@ -2035,20 +2039,20 @@ void eprintf(const char *fmt, ...) {
 /*
  * Thread entry point for moving the Y axis simultaneously with the X axis
  */
+struct timespec tim;
 void *simul_y(void *targv) {
     int i;
-    int *argv;
-    
-    *argv = (int *)targv;
-    y_ready = 1;
-    while(x_ready == 0) ; // wait for x movement, should be brief
-    for(i = 0; i <= (int*)argv[0]; i++) {
+    int *argv = (int *)targv;
+    DEBUG("Y thread initiated");
+    for(i = 0; i <= argv[0]; i++) {
+        DEBUG("Writing Y signals...");
         digitalWrite(Y_PIN, 1);
+        nanosleep(&tim,NULL);
         digitalWrite(Y_PIN, 0);
-        //nanosleep((int)argv[1]);
+        nanosleep(&tim,NULL);
+        pthread_yield_np(); 
     }
     
-    y_ready = 0;
     pthread_exit(NULL);
 }
 
@@ -2064,18 +2068,21 @@ void axis_updated() {
     double steps_z;
     int i;
     
+    DEBUG("From: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
     
     dx = pos_x - last_pos_x;
-    dx = pos_y - last_pos_y;
-    dx = pos_z - last_pos_z;
+    dy = pos_y - last_pos_y;
+    dz = pos_z - last_pos_z;
     last_pos_x = pos_x;
     last_pos_y = pos_y;
     last_pos_z = pos_z;
     pos_x = pos_y = pos_z = -1;
     
-    steps_x = 0;
-    steps_y = 0;
-    // steps_z = 
+    steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
+    steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
+    tim.tv_nsec = 500; // .5s, to stagged state changes
+    
+    DEBUG("Moving X %f steps at %f mm/s and Y %f steps at %f mm/s",dx,steps_x,dy,steps_y);
     
     if(steps_y) {
         pthread_t y_thread;
@@ -2086,24 +2093,20 @@ void axis_updated() {
         argv[1] = 1; // time delay between signals, to change speed...
         rc = pthread_create(&y_thread, NULL, simul_y, (void *)argv);
         if (rc){
-         eprintf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
-         pthread_exit(NULL);
-      }
-    }
-    
-    while(y_ready == 0 && steps_y != 0) ;
-    x_ready = 1;
-    
-    if(steps_x != 0) {
-        for(i = 0; i <= steps_x; i++) {
-            digitalWrite(X_PIN, 1);
-            digitalWrite(X_PIN, 0);
-            // msleep((int*)argv[1]);
+            eprintf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
+            pthread_exit(NULL);
         }
     }
-    
-    while(y_ready == 1 && steps_y != 0) ;
-    x_ready = 0;
+    if(steps_x != 0) {
+        for(i = 0; i <= steps_x; i++) {
+            DEBUG("Writing X signals...");
+            digitalWrite(X_PIN, 1);
+            nanosleep(&tim,NULL);
+            digitalWrite(X_PIN, 0);
+            nanosleep(&tim,NULL);
+            pthread_yield_np(); 
+        }
+    }
 }
 
 /*
