@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 	yylex();
     cleanup();
     pthread_exit(NULL);
-	return EXIT_SUCCESS;
+	exit(EXIT_SUCCESS);
 }
 
 /*
