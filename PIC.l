@@ -25,6 +25,7 @@
 #define DEBUG_FLAG 1
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_MAX 100 /* mm/min */
+#define NSEC_DELAY 500000 /* Nanoseconds between signals */
 
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
@@ -263,7 +264,7 @@ void axis_updated() {
     
     steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
     steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
-    tim.tv_nsec = 500000000; // .5s, to stagged state changes
+    tim.tv_nsec = NSEC_DELAY; // .5s, to stagged state changes
     
     DEBUG("Moving X %f steps at %f mm/s and Y %f steps at %f mm/s",dx,steps_x,dy,steps_y);
     
