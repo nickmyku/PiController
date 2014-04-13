@@ -166,7 +166,7 @@ void *lim_watchdog(void* ignored) {
     
     while(1) {
         nanosleep(&watchdelay,NULL);
-        if(digitalRead(LIM_X) != 0 || digitalRead(LIM_Y) != 0 || digitalRead(LIM_Z) != 0) {
+        if(digitalRead(LIM_X) != 1 || digitalRead(LIM_Y) != 1 || digitalRead(LIM_Z) != 1) {
             eprintf("LIMIT SWITCH DEPRESSED; SYSTEM SHUTTING DOWN COMMIT SEPUKKU NOW!!!");
             exit(1);
             pthread_exit(NULL);

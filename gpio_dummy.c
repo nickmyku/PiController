@@ -23,7 +23,7 @@ void pinMode(int ignored, int neglected) {
 }
 
 int digitalRead(int godie) {
-    return 0;
+    return 1;
 }
 
 #endif /* test build */
