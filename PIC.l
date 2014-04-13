@@ -266,6 +266,20 @@ void axis_updated() {
     
     DEBUG("Moving X %f steps at %f mm/s and Y %f steps at %f mm/s",dx,steps_x,dy,steps_y);
     
+    // directional pins
+    if(dx > 0) {
+        digitalWrite(X_DIR_PIN, 1);
+    }
+    else {
+        digitalWrite(X_DIR_PIN, 0);
+    }
+    if(dy > 0) {
+        digitalWrite(Y_DIR_PIN, 1);
+    }
+    else {
+        digitalWrite(Y_DIR_PIN, 0);
+    }
+    
     if(steps_y) {
         pthread_t y_thread;
         int rc;

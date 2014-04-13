@@ -14,12 +14,12 @@
 #define SLAVE_BUS_ID 0x04
 #define MASTER_BUS_ID 0x03
 #define X_PIN 0
-#define Y_PIN 1
-#define Z_PIN 2
+#define Y_PIN 2
+#define Z_PIN 4
 #define LASER_PIN 3 
-#define X_DIR_PIN 4
-#define Y_DIR_PIN 7
-#define Z_DIR_PIN 8
+#define X_DIR_PIN 1
+#define Y_DIR_PIN 3
+#define Z_DIR_PIN 5
 
 /*
  * ***** COMMANDS *****
