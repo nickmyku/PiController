@@ -33,6 +33,7 @@
 // real deal, include real GPIO library files:
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
+#define pthread_yield_np() pthread_yield(NULL)
 #endif
 
 // use this to provide dev-only feedback. See printDebug() too. 
