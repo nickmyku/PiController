@@ -55,6 +55,7 @@ double last_pos_z = 0;
 int dline = 0;
 char x_ready = 0;
 char y_ready = 0;
+pthread_t lim_thread;
 
 %}
 
@@ -149,7 +150,6 @@ int sanity(int argc, char **argv) {
     pinMode(LIM_Y, INPUT);
     pinMode(LIM_Z, INPUT);
     
-    pthread_t lim_thread;
     int rc = pthread_create(&lim_thread, NULL, lim_watchdog, (void *)NULL);
     if (rc){
         eprintf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
@@ -364,6 +364,7 @@ int laser(double power) {
  * Last thing we do - close files, sync FS, turn off pins etc.
  */
 void cleanup() {
+    pthread_cancel(lim_thread);
     digitalWrite(X_PIN,0);
     digitalWrite(Y_PIN,0);
     digitalWrite(Z_PIN,0);
