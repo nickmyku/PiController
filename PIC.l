@@ -111,6 +111,7 @@ point "."
 int main(int argc, char **argv) {
 	sanity(argc, argv);
 	yylex();
+    cleanup();
     pthread_exit(NULL);
 	return EXIT_SUCCESS;
 }
@@ -188,10 +189,10 @@ void calibrate() {
  * Prints the actual deliverable, using compiled Gcode generated via Lex
  */
 //int printOut() {
-//    if(i2cinit() == -1) {
-//        eprintf("i2c failed to initialize.\nTake a shot every time you see this.");
-//        return -1;
-//    }
+////    if(i2cinit() == -1) {
+////        eprintf("i2c failed to initialize.\nTake a shot every time you see this.");
+////        return -1;
+////    }
 //    
 //	return 0;
 //}
@@ -326,4 +327,19 @@ int laser(double power) {
 	}
 	
 	return 0;
+}
+
+/*
+ * Last thing we do - close files, sync FS, turn off pins etc.
+ */
+void cleanup() {
+    digitalWrite(X_PIN,0);
+    digitalWrite(Y_PIN,0);
+    digitalWrite(Z_PIN,0);
+    digitalWrite(X_DIR_PIN,0);
+    digitalWrite(Y_DIR_PIN,0);
+    digitalWrite(Z_DIR_PIN,0);
+    digitalWrite(LASER_PIN,0);
+    fclose(fcomp);
+    system("sync");
 }

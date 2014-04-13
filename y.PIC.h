@@ -37,9 +37,6 @@ void axis_updated();
 // runs the laser at power level
 int laser(double power);
 
-// cleans everything up before gracefully shutting down
-int cleanup();
-
 // sets a slave pin high
 int setSlaveHigh(FILE *i2c, int pin);
 
@@ -51,6 +48,9 @@ int move(int axis, int steps);
 
 // same as move() but for microstepping
 int micromove(int axis, int microsteps);
+
+// last thing this program does - turn off pins, free memory, close files/sync
+void cleanup();
 
 #endif /* Y_PIC_H_ */
 
