@@ -514,6 +514,7 @@ char *yytext;
 #define DEBUG_FLAG 1
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_MAX 100 /* mm/min */
+#define NSEC_DELAY 500000 /* Nanoseconds between signals */
 
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
@@ -522,6 +523,7 @@ char *yytext;
 // real deal, include real GPIO library files:
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
+#define pthread_yield_np() pthread_yield(NULL)
 #endif
 
 // use this to provide dev-only feedback. See printDebug() too. 
@@ -551,7 +553,7 @@ char y_ready = 0;
 
 
 
-#line 555 "<stdout>"
+#line 557 "<stdout>"
 
 #define INITIAL 0
 #define MOVEMENT 1
@@ -737,10 +739,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 81 "PIC.l"
+#line 83 "PIC.l"
 
 
-#line 744 "<stdout>"
+#line 746 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -825,98 +827,98 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 83 "PIC.l"
+#line 85 "PIC.l"
 {BEGIN MOVEMENT;}
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 84 "PIC.l"
+#line 86 "PIC.l"
 ;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 85 "PIC.l"
+#line 87 "PIC.l"
 {laseroff();}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 86 "PIC.l"
+#line 88 "PIC.l"
 {laseron();}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 87 "PIC.l"
+#line 89 "PIC.l"
 {yyterminate();}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 89 "PIC.l"
+#line 91 "PIC.l"
 {yyless(1);BEGIN X;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 90 "PIC.l"
+#line 92 "PIC.l"
 {yyless(1);BEGIN Y;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 91 "PIC.l"
+#line 93 "PIC.l"
 {yyless(1);BEGIN Z;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 92 "PIC.l"
+#line 94 "PIC.l"
 ;
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 93 "PIC.l"
+#line 95 "PIC.l"
 {dline++;DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 95 "PIC.l"
+#line 97 "PIC.l"
 {pos_x = strtod(yytext, NULL);DEBUG("X set to %f",pos_x);BEGIN MOVEMENT;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 96 "PIC.l"
+#line 98 "PIC.l"
 {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 97 "PIC.l"
+#line 99 "PIC.l"
 {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 98 "PIC.l"
+#line 100 "PIC.l"
 {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 	YY_BREAK
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 100 "PIC.l"
+#line 102 "PIC.l"
 {dline++;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 101 "PIC.l"
+#line 103 "PIC.l"
 ;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 102 "PIC.l"
+#line 104 "PIC.l"
 {DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 104 "PIC.l"
+#line 106 "PIC.l"
 ECHO;
 	YY_BREAK
-#line 920 "<stdout>"
+#line 922 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(MOVEMENT):
 case YY_STATE_EOF(X):
@@ -1917,7 +1919,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 104 "PIC.l"
+#line 106 "PIC.l"
 
 
 
@@ -1956,6 +1958,14 @@ int sanity(int argc, char **argv) {
 		eprintf("Even Helen Keller knows you should be able to write to /tmp, and she's fucking dead.\n");
 		exit(1);
 	}
+    
+    pinMode(X_PIN, OUTPUT);
+    pinMode(Y_PIN, OUTPUT);
+    pinMode(Z_PIN, OUTPUT);
+    pinMode(X_DIR_PIN, OUTPUT);
+    pinMode(Y_DIR_PIN, OUTPUT);
+    pinMode(Z_DIR_PIN, OUTPUT);
+    pinMode(LASER_PIN, PWM_OUTPUT);
 }
 
 /*
@@ -2080,9 +2090,23 @@ void axis_updated() {
     
     steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
     steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
-    tim.tv_nsec = 500; // .5s, to stagged state changes
+    tim.tv_nsec = NSEC_DELAY; // .5s, to stagged state changes
     
     DEBUG("Moving X %f steps at %f mm/s and Y %f steps at %f mm/s",dx,steps_x,dy,steps_y);
+    
+    // directional pins
+    if(dx > 0) {
+        digitalWrite(X_DIR_PIN, 1);
+    }
+    else {
+        digitalWrite(X_DIR_PIN, 0);
+    }
+    if(dy > 0) {
+        digitalWrite(Y_DIR_PIN, 1);
+    }
+    else {
+        digitalWrite(Y_DIR_PIN, 0);
+    }
     
     if(steps_y) {
         pthread_t y_thread;

@@ -140,6 +140,14 @@ int sanity(int argc, char **argv) {
 		eprintf("Even Helen Keller knows you should be able to write to /tmp, and she's fucking dead.\n");
 		exit(1);
 	}
+    
+    pinMode(X_PIN, OUTPUT);
+    pinMode(Y_PIN, OUTPUT);
+    pinMode(Z_PIN, OUTPUT);
+    pinMode(X_DIR_PIN, OUTPUT);
+    pinMode(Y_DIR_PIN, OUTPUT);
+    pinMode(Z_DIR_PIN, OUTPUT);
+    pinMode(LASER_PIN, PWM_OUTPUT);
 }
 
 /*
