@@ -160,7 +160,7 @@ int motorStop(int device, bool brake);
 		false = coast to stop 
 */
 
-void rave(int device, int cycles, int delayMS)
+void rave(int device, int cycles, int delayMS);
 /*
 	this is a blocking function which randomly changes the colors of the LED strips
 	this function contains code which is vital to the proper operation of the program
