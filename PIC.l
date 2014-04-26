@@ -300,8 +300,11 @@ void axis_updated() {
     last_pos_z = pos_z;
     pos_x = pos_y = pos_z = -1;
     
-    steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
-    steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
+    if(dx == 0) steps_x = 0;
+    else steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
+    
+    if(dy == 0) steps_y = 0;
+    else steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
     constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
     xdelay.tv_nsec = ((steps_x > steps_y)?(abs(abs(steps_y)/abs(steps_x))):1)*NSEC_DELAY;
     ydelay.tv_nsec = ((steps_x < steps_y)?(abs(abs(steps_x)/abs(steps_y))):1)*NSEC_DELAY;
@@ -309,20 +312,20 @@ void axis_updated() {
     DEBUG("Moving X %f steps at %f mm/s (d. %f) and Y %f steps at %f mm/s (d. %f)",dx,steps_x,xdelay.tv_nsec,dy,steps_y,ydelay.tv_nsec);
     
     // directional pins
-    if(dx > 0) {
+    if(dx >= 0) {
         digitalWrite(X_DIR_PIN, 1);
     }
     else {
         digitalWrite(X_DIR_PIN, 0);
     }
-    if(dy > 0) {
+    if(dy >= 0) {
         digitalWrite(Y_DIR_PIN, 1);
     }
     else {
         digitalWrite(Y_DIR_PIN, 0);
     }
     
-    if(steps_y) {
+    if(steps_y != 0) {
         pthread_t y_thread;
         int rc;
         int argv[2];
@@ -335,6 +338,7 @@ void axis_updated() {
             pthread_exit(NULL);
         }
     }
+    
     if(steps_x != 0) {
         for(i = 0; i <= steps_x; i++) {
             DEBUG("Writing X signals...");

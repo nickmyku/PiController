@@ -14,6 +14,9 @@
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 
+#define writeReg(dev,reg,data) wiringPiI2CWriteReg8(dev,reg,data)
+#define readReg(dev,reg) wiringPiI2CReadReg8(dev,reg)
+
 //global varible declarations
 const int motorPwmPin = 3;	//pin (on Data Register A) that the pwm signal of the dc motor driver is connected to
 const int w_lim_0 = 0;		//pin (on Data Register B) where w limit switch 0 is connected	
@@ -613,18 +616,5 @@ int bitsToInt(bool array[8])
 	}
 	
 	return number;
-}
-
-//only added so i dont have to write out the whole command on every call
-void writeReg(int device, int memRegister, int data)
-{
-	wiringPiI2CWriteReg8 (device, memRegister, data);
-
-}
-//only added so i dont have to write out the whole command on every call
-int readReg(int device, int memRegister)
-{
-	return wiringPiI2CReadReg8 (device, memRegister);
-
 }
 
