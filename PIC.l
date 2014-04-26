@@ -22,7 +22,6 @@
 #include "y.PIC.h"
 #include "slave/commands.h"
 
-#define DEBUG_FLAG 1
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_MAX 100 /* mm/min */
 #define NSEC_DELAY 500000 /* Nanoseconds between signals */
@@ -226,15 +225,16 @@ void calibrate() {
  * (DO NOT CALL THIS DIRECTLY - use DEBUG() instead, or else tiny elves will feast on your toes)
  */
 void printDebug(const char *fmt, const int line, const char *file, ...) {
+#ifdef DEBUG_FLAG
     va_list list;
     va_start(list, file);
 
-    if(DEBUG_FLAG) {
-      fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
-      vfprintf(stderr, fmt, list);
-      putc('\n',stderr);
-    }
+    fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
+    vfprintf(stderr, fmt, list);
+    putc('\n',stderr);
+    
     va_end(list);
+#endif /* DEBUG_FLAG */
 }
 
 /*
