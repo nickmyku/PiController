@@ -88,7 +88,7 @@ point "."
 <MOVEMENT>{yaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Y;}
 <MOVEMENT>{zaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Z;}
 <MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
-<MOVEMENT>{newline} {dline++;DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{newline} {dline++;sleep(3);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 
 <X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);DEBUG("X set to %f",pos_x);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
