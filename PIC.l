@@ -259,21 +259,22 @@ void eprintf(const char *fmt, ...) {
 struct timespec constdelay;
 struct timespec xdelay;
 struct timespec ydelay;
-//double coef_x; // how many more X than Y
-//double coef_y; // Y than X
-//double coef_threshold; // write when reached
+double y_writes;
+double x_writes;
 void *simul_y(void *targv) {
     int i;
     int *argv = (int *)targv;
     DEBUG("Y thread initiated");
     for(i = 0; i <= argv[0]; i++) {
-        DEBUG("Writing Y signals...");
         digitalWrite(Y_PIN, 1);
         nanosleep(&constdelay,NULL);
         digitalWrite(Y_PIN, 0);
         nanosleep(&ydelay,NULL);
+        y_writes++;
         pthread_yield_np(); 
     }
+    
+    DEBUG("Wrote %f Y signals",y_writes);
     
     pthread_exit(NULL);
 }
@@ -299,6 +300,7 @@ void axis_updated() {
     last_pos_y = pos_y;
     last_pos_z = pos_z;
     pos_x = pos_y = pos_z = -1;
+    x_writes = y_writes = 0;
     
     if(dx == 0) steps_x = 0;
     else steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
@@ -306,8 +308,8 @@ void axis_updated() {
     if(dy == 0) steps_y = 0;
     else steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
     constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
-    xdelay.tv_nsec = ((steps_x > steps_y)?(abs(abs(steps_y)/abs(steps_x))):1)*NSEC_DELAY;
-    ydelay.tv_nsec = ((steps_x < steps_y)?(abs(abs(steps_x)/abs(steps_y))):1)*NSEC_DELAY;
+    xdelay.tv_nsec = ((steps_x > steps_y)?(fabs(fabs(steps_y)/fabs(steps_x))):1)*NSEC_DELAY;
+    ydelay.tv_nsec = ((steps_x < steps_y)?(fabs(fabs(steps_x)/fabs(steps_y))):1)*NSEC_DELAY;
     
     DEBUG("Moving X %f steps at %f mm/s (d. %f) and Y %f steps at %f mm/s (d. %f)",dx,steps_x,xdelay.tv_nsec,dy,steps_y,ydelay.tv_nsec);
     
@@ -341,13 +343,14 @@ void axis_updated() {
     
     if(steps_x != 0) {
         for(i = 0; i <= steps_x; i++) {
-            DEBUG("Writing X signals...");
             digitalWrite(X_PIN, 1);
             nanosleep(&constdelay,NULL);
             digitalWrite(X_PIN, 0);
             nanosleep(&xdelay,NULL);
+            x_writes++;
             pthread_yield_np(); 
         }
+        DEBUG("Wrote %f X signals",x_writes);
     }
 }
 
