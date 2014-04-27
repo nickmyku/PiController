@@ -23,7 +23,7 @@
 #include "slave/commands.h"
 
 #define COMPILED_FILE "/tmp/PIC.o"
-#define V_MAX (double)100.0 /* mm/min */
+#define V_MAX (double)250.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 
 #ifndef TEST_BUILD
@@ -210,7 +210,7 @@ void eprintf(const char *fmt, ...) {
     
     fprintf(stderr, prefix);
     vfprintf(stderr, fmt, list);
-#warning ignore the "format not a string literal" bullshit
+//#warning ignore the "format not a string literal" bullshit
     fputc('\n', stderr);
     
     va_end(list);
@@ -230,9 +230,9 @@ void *simul_y(void *targv) {
     double i;
     int *argv = (int *)targv;
     DEBUG("Y thread initiated");
-    for(i = 0.0; i <= fabs(steps_y); i+=y_steps_per_mm) {
+    for(i = 0.0; i <= fabs(steps_y); i++) {
         digitalWrite(Y_PIN, 1);
-        nanosleep(&constdelay,NULL);
+        nanosleep(&ydelay,NULL);
         digitalWrite(Y_PIN, 0);
         nanosleep(&ydelay,NULL);
         y_writes++;
@@ -260,7 +260,7 @@ void axis_updated() {
     double nano_y_time;
     double i;
     
-    DEBUG("From: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
+    DEBUG("\nFrom: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
     
     dx = pos_x - last_pos_x;
     dy = pos_y - last_pos_y;
@@ -298,7 +298,7 @@ void axis_updated() {
     ydelay.tv_nsec = (long)nano_y_time;
     constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
         
-    DEBUG("Moving X %f steps at %f mm/s (d. %ld) and Y %f steps at %f mm/s (d. %ld)", dx, x_vel,xdelay.tv_nsec,dy,y_vel,ydelay.tv_nsec);
+    DEBUG("\nX %f steps at %f mm/s (d. %ld)\nY %f steps at %f mm/s (d. %ld)", steps_x, x_vel,xdelay.tv_nsec,steps_y,y_vel,ydelay.tv_nsec);
     
     // directional pins
     if(dx >= 0.0) {
@@ -329,9 +329,9 @@ void axis_updated() {
     }
     
     if(steps_x != 0.0) {
-        for(i = 0.0; i <= fabs(steps_x); i+=x_steps_per_mm) {
+        for(i = 0.0; i <= fabs(steps_x); i++) {
             digitalWrite(X_PIN, 1);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&xdelay,NULL);
             digitalWrite(X_PIN, 0);
             nanosleep(&xdelay,NULL);
             x_writes++;
