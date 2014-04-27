@@ -23,8 +23,8 @@
 #include "slave/commands.h"
 
 #define COMPILED_FILE "/tmp/PIC.o"
-#define V_MAX 100 /* mm/min */
-#define NSEC_DELAY 500000 /* Nanoseconds between signals */
+#define V_MAX (double)100.0 /* mm/min */
+#define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
@@ -51,6 +51,8 @@ double pos_z = 0;
 double last_pos_x = 0;
 double last_pos_y = 0;
 double last_pos_z = 0;
+double x_steps_per_mm = 1/.00635; 	//math to get this number is defined elswhere
+double y_steps_per_mm = 1/.00635;
 int dline = 0;
 char x_ready = 0;
 char y_ready = 0;
@@ -90,7 +92,7 @@ point "."
 <MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
 <MOVEMENT>{newline} {dline++;sleep(3);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 
-<X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);DEBUG("X set to %f",pos_x);BEGIN MOVEMENT;}
+<X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Z>{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
@@ -182,45 +184,6 @@ void calibrate() {
 }
 
 /*
- * Initialize the i2c bus the a master node
- */
-//int i2cinit() {
-//    int err = 0;
-//    
-//    i2cfile = wiringPiI2CSetup(SLAVE_BUS_ID);
-//    if(i2cfile == -1) err++;
-//    DEBUG("Master bus initialized, or should be (%d)", err);
-//    
-//    // initialize the bus with the "hello" handshake:
-//    int op = OP_HELLO;
-//    if(write(i2cfile, &op, sizeof(int)) < 0) err++;
-//    sleep(1);
-//    if(read(i2cfile, &op, sizeof(int))) err++;
-//    if(op != OP_HELLO) {
-//        err++;
-//        DEBUG("Slave said: %d", op);
-//    }
-//    DEBUG("Handshake results: %d, circle-jerk status", err);
-//    
-//    if(err == 0) return 0;
-//    // else
-//    DEBUG("%d errors occurred while initializing the i2c bus.\nHave you considered stripping as a profession instead?", err);
-//    return -1;
-//}
-
-/*
- * Prints the actual deliverable, using compiled Gcode generated via Lex
- */
-//int printOut() {
-////    if(i2cinit() == -1) {
-////        eprintf("i2c failed to initialize.\nTake a shot every time you see this.");
-////        return -1;
-////    }
-//    
-//	return 0;
-//}
-
-/*
  * Prettyful debug function 
  * (DO NOT CALL THIS DIRECTLY - use DEBUG() instead, or else tiny elves will feast on your toes)
  */
@@ -261,11 +224,13 @@ struct timespec xdelay;
 struct timespec ydelay;
 double y_writes;
 double x_writes;
+double steps_x;
+double steps_y;
 void *simul_y(void *targv) {
-    int i;
+    double i;
     int *argv = (int *)targv;
     DEBUG("Y thread initiated");
-    for(i = 0; i <= argv[0]; i++) {
+    for(i = 0.0; i <= fabs(steps_y); i+=y_steps_per_mm) {
         digitalWrite(Y_PIN, 1);
         nanosleep(&constdelay,NULL);
         digitalWrite(Y_PIN, 0);
@@ -273,7 +238,7 @@ void *simul_y(void *targv) {
         y_writes++;
         pthread_yield_np(); 
     }
-    
+    steps_y = 0.0; // allows X/main thread to proceed
     DEBUG("Wrote %f Y signals",y_writes);
     
     pthread_exit(NULL);
@@ -286,10 +251,14 @@ void axis_updated() {
     double dx;
     double dy;
     double dz;
-    double steps_x;
-    double steps_y;
     double steps_z;
-    int i;
+    double x_vel;
+    double y_vel;
+    double temp_x_time;
+    double temp_y_time;
+    double nano_x_time;
+    double nano_y_time;
+    double i;
     
     DEBUG("From: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
     
@@ -299,35 +268,53 @@ void axis_updated() {
     last_pos_x = pos_x;
     last_pos_y = pos_y;
     last_pos_z = pos_z;
-    pos_x = pos_y = pos_z = -1;
-    x_writes = y_writes = 0;
+    pos_x = pos_y = pos_z = -1.0;
+    x_writes = y_writes = 0.0;
     
-    if(dx == 0) steps_x = 0;
-    else steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
+    steps_x = dx*x_steps_per_mm;
+    steps_y = dy*y_steps_per_mm;
     
-    if(dy == 0) steps_y = 0;
-    else steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
+    DEBUG("dX: %f, dY: %f",dx,dy);
+        
+    if((dx != 0) && (dy != 0))
+    {
+    	x_vel = sqrt((V_MAX*V_MAX)/(1+((dy*dy)/(dx*dx))));
+    	y_vel = sqrt((V_MAX*V_MAX)/(1+((dx*dx)/(dy*dy))));
+        
+    }
+    else
+    {
+    	x_vel = V_MAX;
+    	y_vel = V_MAX;
+    }
+    
+    temp_x_time = 1/((x_vel*x_steps_per_mm)/60000);	//calculate ms delay for x step
+    temp_y_time = 1/((y_vel*y_steps_per_mm)/60000);	//calculate ms delay for y step
+    
+    nano_x_time = ((temp_x_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    nano_y_time = ((temp_y_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    
+    xdelay.tv_nsec = (long)nano_x_time;
+    ydelay.tv_nsec = (long)nano_y_time;
     constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
-    xdelay.tv_nsec = ((steps_x > steps_y)?(fabs(fabs(steps_y)/fabs(steps_x))):1)*NSEC_DELAY;
-    ydelay.tv_nsec = ((steps_x < steps_y)?(fabs(fabs(steps_x)/fabs(steps_y))):1)*NSEC_DELAY;
-    
-    DEBUG("Moving X %f steps at %f mm/s (d. %f) and Y %f steps at %f mm/s (d. %f)",dx,steps_x,xdelay.tv_nsec,dy,steps_y,ydelay.tv_nsec);
+        
+    DEBUG("Moving X %f steps at %f mm/s (d. %ld) and Y %f steps at %f mm/s (d. %ld)", dx, x_vel,xdelay.tv_nsec,dy,y_vel,ydelay.tv_nsec);
     
     // directional pins
-    if(dx >= 0) {
+    if(dx >= 0.0) {
         digitalWrite(X_DIR_PIN, 1);
     }
     else {
         digitalWrite(X_DIR_PIN, 0);
     }
-    if(dy >= 0) {
+    if(dy >= 0.0) {
         digitalWrite(Y_DIR_PIN, 1);
     }
     else {
         digitalWrite(Y_DIR_PIN, 0);
     }
     
-    if(steps_y != 0) {
+    if(steps_y != 0.0) {
         pthread_t y_thread;
         int rc;
         int argv[2];
@@ -341,8 +328,8 @@ void axis_updated() {
         }
     }
     
-    if(steps_x != 0) {
-        for(i = 0; i <= steps_x; i++) {
+    if(steps_x != 0.0) {
+        for(i = 0.0; i <= fabs(steps_x); i+=x_steps_per_mm) {
             digitalWrite(X_PIN, 1);
             nanosleep(&constdelay,NULL);
             digitalWrite(X_PIN, 0);
@@ -351,6 +338,14 @@ void axis_updated() {
             pthread_yield_np(); 
         }
         DEBUG("Wrote %f X signals",x_writes);
+    }
+    
+    if(steps_y != 0.0) {
+        // wait for Y movement to finish
+        do {
+            pthread_yield_np();
+        }
+        while(steps_y != 0.0);
     }
 }
 
