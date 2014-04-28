@@ -1,8 +1,21 @@
+#ifndef SX1509_H_
 //header file for sx1509 driver
 //created by Nicholas Mykuylowycz
 //created on April 23, 2014
 
+//prototpye function declarations
+int intToBits(bool * array, int number);
+int bitsToInt(bool array[8]);
+int scaleIntensity(int num);
+int initializeDevice();
+int LEDBreath(int device, int pin, int onIntensity, int offIntensity);
+int LEDColor(int device, int LEDNum, int red, int green, int blue);
+int motorMove(int device, bool dir, int speed);
+int motorStop(int device, bool brake);
+int moveToLimit(int device, bool dir, int speed, bool brake);
+bool readWLimit(int device, int switchNum);
 
+void rave(int device, int cycles, int delayMS);
 
 int initializeDevice();
 /*
@@ -176,3 +189,5 @@ void rave(int device, int cycles, int delayMS);
 	delayMS designates the approximate millisecond delay between color change events
 */
 
+
+#endif /* SX1509_H_ */

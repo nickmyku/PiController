@@ -1,3 +1,4 @@
+#ifndef SX1509_C_
 //driver for the sx1509 io expander board in the REV 2 3d metal printer prototype
 //Nicholas Mykulowycz
 //Created April 20, 2014
@@ -11,11 +12,18 @@
 #include <math.h>
 #include <time.h>
 
-#include <wiringPi.h>
-#include <wiringPiI2C.h>
+// wiringPi included by PIC.l
 
 #define writeReg(dev,reg,data) wiringPiI2CWriteReg8(dev,reg,data)
 #define readReg(dev,reg) wiringPiI2CReadReg8(dev,reg)
+
+#ifdef __clang__
+__has_feature(cxx_binary_literals)
+#endif
+
+#if __GNUC_MINOR__ < 3
+#include "bin2hex.h"
+#endif
 
 //global varible declarations
 const int motorPwmPin = 3;	//pin (on Data Register A) that the pwm signal of the dc motor driver is connected to
@@ -24,49 +32,33 @@ const int w_lim_1 = 1;		//pin (on Data Regsiter B) where w limit switch 1 is con
 const int timeout = 200000;	//timeout value for w axis "move to limit" function
 const int delayMS = 100;	//delay between limit switch checks on w axis "move to limit" function
 
-
-
 //sx1509 internal register addresses
-const int SXADDR =	0x3e;
-const int REGRESET = 	0x7d;
-const int REGPOLARITYA =	0x0d;
-const int REGPOLARITYB =	0x0c;
-const int REGPULLUPA =	0x07;
-const int REGPULLUPB =	0x06;
+const int SXADDR = 0x3e;
+const int REGRESET =  0x7d;
+const int REGPOLARITYA = 0x0d;
+const int REGPOLARITYB = 0x0c;
+const int REGPULLUPA = 0x07;
+const int REGPULLUPB = 0x06;
 const int REGDIRA =	0x0f;
 const int REGDIRB =	0x0e;
-const int REGINPUTDISABLEA =	0x01;
-const int REGINPUTDISABLEB =	0x00;
-const int REGOPENDRAINA = 	0x0b;
-const int REGOPENDRAINB = 	0x0a;
-const int REGDATAA =	0x11;
-const int REGDATAB =	0x10;
-const int REGMISC =	0x1f;
-const int REGCLOCK =	0x1e;
+const int REGINPUTDISABLEA = 0x01;
+const int REGINPUTDISABLEB = 0x00;
+const int REGOPENDRAINA = 0x0b;
+const int REGOPENDRAINB = 0x0a;
+const int REGDATAA = 0x11;
+const int REGDATAB = 0x10;
+const int REGMISC = 0x1f;
+const int REGCLOCK = 0x1e;
 const int REGLEDDRIVERENABLEA =	0x21;
 const int REGLEDDRIVERENABLEB = 0x20;
-int REGION[16] =	{0x2a,0x2d,0x30,0x33,0x36,0x3b,0x40,0x45,0x4a,0x4d,0x50,0x53,0x56,0x5b,0x60,0x65};
-int REGTON[16] =	{0x29,0x2c,0x2f,0x32,0x35,0x3a,0x3f,0x44,0x49,0x4c,0x4f,0x52,0x55,0x5a,0x5f,0x64};
-int REGOFF[16] = 	{0x2b,0x2e,0x31,0x34,0x37,0x3c,0x41,0x46,0x4b,0x4e,0x51,0x54,0x57,0x5c,0x61,0x66};
+int REGION[16] = {0x2a,0x2d,0x30,0x33,0x36,0x3b,0x40,0x45,0x4a,0x4d,0x50,0x53,0x56,0x5b,0x60,0x65};
+int REGTON[16] = {0x29,0x2c,0x2f,0x32,0x35,0x3a,0x3f,0x44,0x49,0x4c,0x4f,0x52,0x55,0x5a,0x5f,0x64};
+int REGOFF[16] =  {0x2b,0x2e,0x31,0x34,0x37,0x3c,0x41,0x46,0x4b,0x4e,0x51,0x54,0x57,0x5c,0x61,0x66};
 int REGTRISE[16] =	{   0,   0,   0,   0,0x38,0x3d,0x42,0x47,   0,   0,   0,   0,0x58,0x5d,0x62,0x67};
 int REGTFALL[16] =	{   0,   0,   0,   0,0x39,0x3e,0x43,0x48,   0,   0,   0,   0,0x59,0x5e,0x63,0x68};
 
-//prototpye function declarations
-void writeReg(int device, int memRegister, int data);
-int readReg(int device, int memRegister);
-int intToBits(bool * array, int number);
-int bitsToInt(bool array[8]);
-int scaleIntensity(int num);
-int initializeDevice();
-int LEDBreath(int device, int pin, int onIntensity, int offIntensity);
-int LEDColor(int device, int LEDNum, int red, int green, int blue);
-int motorMove(int device, bool dir, int speed);
-int motorStop(int device, bool brake);
-int moveToLimit(int device, bool dir, int speed, bool brake);
-bool readWLimit(int device, int switchNum);
-
-void rave(int device, int cycles, int delayMS);
-
+/* Commented out via macro */
+#ifdef DRIVER_MAIN
 int main (void)
 {
 	//create identifier for sx1509 io expander
@@ -126,6 +118,7 @@ int main (void)
 
 	return 0;
 }
+#endif /* DRIVER_MAIN */
 
 int initializeDevice ()
 {
@@ -134,9 +127,7 @@ int initializeDevice ()
 	//intialize I2C connection to sx1509 
 	if((device = wiringPiI2CSetup(SXADDR)) == -1)
 	{
-		fprintf(stderr, "sx: unable to initialize I2C %s, activating self destruct sequence\n", strerror (errno));
-		printf("error: function \"selfDestruct()\" not defined in scope of program\n");
-		printf("alright fine you win this time\n");
+		// error out, caller must handle errors:
 		return -1;
 	}
 	
@@ -187,7 +178,7 @@ int LEDBreath(int device, int pin, int onIntensity, int offIntensity)
 	
 	if(REGTRISE[pin] == 0)
 	{
-		printf("this pin has been asphyxiated, it cannot breath.\n");
+		DEBUG("this pin has been asphyxiated, it cannot breathe.\n");
 		return -1;
 	}
 	
@@ -289,7 +280,7 @@ int LEDColor(int device, int LEDNum, int red, int green, int blue)
 			writeReg (device, REGDATAB, reg_data);
 			break;
 		default:
-			printf("there is no LED %d, asshole\n",LEDNum);
+			DEBUG("there is no LED %d, asshole\n",LEDNum);
 			return -1;
 	}
 	
@@ -416,7 +407,7 @@ bool readWLimit(int device, int switchNum)
 				return true;
 			}
 		default:
-			printf("no limit switch connected to %d\n",switchNum);
+			DEBUG("no limit switch connected to %d\n",switchNum);
 			return false;
 	}
 }
@@ -518,12 +509,12 @@ int moveToLimit(int device, bool dir, int speed, bool brake)
 	//check to see if w axis has already reched limit
 	if(dir && readWLimit(device, 1))
 	{
-		printf("already at positive limit\n");
+		DEBUG("already at positive limit\n");
 		return -1;
 	}
 	if(!dir && readWLimit(device, 0))
 	{
-		printf("already at negative limit\n");
+		DEBUG("already at negative limit\n");
 		return -2;
 	}
 	
@@ -618,3 +609,4 @@ int bitsToInt(bool array[8])
 	return number;
 }
 
+#endif /* SX1509_C_ */

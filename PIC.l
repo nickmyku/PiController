@@ -1,7 +1,7 @@
 %{
 /*
  ============================================================================
- Name        : PIC.c
+ Name        : PIC.l
  Author      : Anthony Cargile
  Version     :
  Copyright   : Copyright 2014 Embark Industries
@@ -19,13 +19,12 @@
 #include <pthread.h>
 #include <math.h>
 #include <unistd.h>
+#include <stdbool.h>
+    
 #include "y.PIC.h"
 #include "slave/commands.h"
-
-#define COMPILED_FILE "/tmp/PIC.o"
-#define V_MAX (double)250.0 /* mm/min */
-#define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
-
+#include "drivers/sx1509.h"
+    
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
 #include "gpio_dummy.h"
@@ -41,10 +40,19 @@
 do {\
     printDebug(fmt, __LINE__, __FILE__, ## __VA_ARGS__);\
 } while(0)
+    
+#define COMPILED_FILE "/tmp/PIC.o"
+#define V_MAX (double)250.0 /* mm/min */
+#define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 
 // globals (don't hate):
 FILE *fcomp; // compiled output (/tmp file)
 int i2cfile;
+    
+// SX1509 Driver:
+int sx = -1;
+    
+// position storage (shared pthread memory)
 double pos_x = 0;
 double pos_y = 0;
 double pos_z = 0;
@@ -80,17 +88,19 @@ point "."
 
 %%
 
-<INITIAL>{general}"0"?"1" {BEGIN MOVEMENT;}
+<INITIAL>{general}"0"?"1" {/* M[0]1 */BEGIN MOVEMENT;}
 <INITIAL>{misc}"0"?"3"{whitespace}*{newline}+{misc}"0"?"5" ;
-<INITIAL>{misc}"0"?"3" {laseroff();}
-<INITIAL>{misc}"0"?"5" {laseron();}
-<INITIAL>{misc}"0"?"2" {yyterminate();}
+<INITIAL>{misc}"0"?"3" {/* M[0]3 */laseroff();}
+<INITIAL>{misc}"0"?"5" {/* M[0]5 */laseron();}
+<INITIAL>{misc}"1""0" {/* M10 */moveToLimit(sx, false, 200, true);}
+<INITIAL>{misc}"1""1" {/* M11 */moveToLimit(sx, true, 200, true);}
+<INITIAL>{misc}"0"?"2" {/* M[0]2 */yyterminate();}
 
-<MOVEMENT>{xaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN X;}
-<MOVEMENT>{yaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Y;}
-<MOVEMENT>{zaxis}{digit}+{point}{digit}+ {yyless(1);BEGIN Z;}
+<MOVEMENT>{xaxis}{digit}+{point}{digit}+ {/* M[0]1 X#.# */yyless(1);BEGIN X;}
+<MOVEMENT>{yaxis}{digit}+{point}{digit}+ {/* M[0]1 Y#.# */yyless(1);BEGIN Y;}
+<MOVEMENT>{zaxis}{digit}+{point}{digit}+ {/* M[0]1 Z#.# */yyless(1);BEGIN Z;}
 <MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
-<MOVEMENT>{newline} {dline++;sleep(3);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{newline} {/* EOL of M[0]1 */dline++;sleep(3);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 
 <X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
@@ -118,28 +128,30 @@ int main(int argc, char **argv) {
  * Rudimentary pre-execution...stuff.
  */
 int sanity(int argc, char **argv) {
+    // setup core components:
 	if(wiringPiSetup() == -1) {
 		eprintf("Pin setup failed!\n(Do you even root, bro?)\n");
-		exit(1);
+		pthread_exit(NULL);
 	}
 
 	if(argc <= 1) {
 		eprintf("Your argument is invalid.\nAnd you're a towel.\n");
-		exit(1);
+		pthread_exit(NULL);
 	}
 	
 	FILE *fp = NULL;
 	if((fp = fopen(argv[1], "r")) == NULL) {
 		eprintf("That file doesn't even exist.\nNice try, asshole.\n");
-		exit(1);
+		pthread_exit(NULL);
 	}
 	yyin = fp;
 	
 	if((fcomp = fopen(COMPILED_FILE, "wb")) == NULL) {
 		eprintf("Even Helen Keller knows you should be able to write to /tmp, and she's fucking dead.\n");
-		exit(1);
+		pthread_exit(NULL);
 	}
     
+    // set up pins:
     pinMode(X_PIN, OUTPUT);
     pinMode(Y_PIN, OUTPUT);
     pinMode(Z_PIN, OUTPUT);
@@ -151,6 +163,13 @@ int sanity(int argc, char **argv) {
     pinMode(LIM_Y, INPUT);
     pinMode(LIM_Z, INPUT);
     
+    // set up driver(s):
+    if((sx = initializeDevice()) == -1) {
+        eprintf("\"Fatal issue involving the driver\"\n-Princess Diana");
+        pthread_exit(NULL);
+    }
+    
+    // set up watchdog thread (limit switch detection)
     int rc = pthread_create(&lim_thread, NULL, lim_watchdog, (void *)NULL);
     if (rc){
         eprintf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
@@ -210,7 +229,7 @@ void eprintf(const char *fmt, ...) {
     
     fprintf(stderr, prefix);
     vfprintf(stderr, fmt, list);
-//#warning ignore the "format not a string literal" bullshit
+#warning ignore the "format not a string literal" bullshit
     fputc('\n', stderr);
     
     va_end(list);
