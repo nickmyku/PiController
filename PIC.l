@@ -24,6 +24,7 @@
 #include "y.PIC.h"
 #include "slave/commands.h"
 #include "drivers/sx1509.h"
+#include "drivers/axis_config.h"
     
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
@@ -59,8 +60,10 @@ double pos_z = 0;
 double last_pos_x = 0;
 double last_pos_y = 0;
 double last_pos_z = 0;
-double x_steps_per_mm = 1/.00635; 	//math to get this number is defined elswhere
-double y_steps_per_mm = 1/.00635;
+double x_steps_per_mm;
+double y_steps_per_mm;
+double z_steps_per_mm;
+double v_steps_per_mm;
 int dline = 0;
 char x_ready = 0;
 char y_ready = 0;
@@ -162,6 +165,12 @@ int sanity(int argc, char **argv) {
     pinMode(LIM_X, INPUT);
     pinMode(LIM_Y, INPUT);
     pinMode(LIM_Z, INPUT);
+    
+    // set up axis and motor parameters
+    x_steps_per_mm = stepsPerMM('x'); 	
+    y_steps_per_mm = stepsPerMM('y');
+    z_steps_per_mm = stepsPerMM('z');
+    v_steps_per_mm = stepsPerMM('v');
     
     // set up driver(s):
     if((sx = initializeDevice()) == -1) {

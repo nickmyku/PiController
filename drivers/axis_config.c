@@ -132,6 +132,8 @@ double stepsPerMM(char letter)
 	}
 }
 
+/* Commented out via macro */
+#ifdef DRIVER_MAIN
 int main()
 {
 	//prints the value of each axis
@@ -143,5 +145,6 @@ int main()
 	
 	return 0;
 }
+#endif /* DRIVER_MAIN */
 
 #endif /* AXIS_CONFIG_C_ */
