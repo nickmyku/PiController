@@ -1,3 +1,4 @@
+#ifndef AXIS_CONFIG_C_
 //file which sets up motor and axis parameters
 //Nicholas Mykulowycz
 //Created May 1, 2014
@@ -119,7 +120,8 @@ double stepsPerMM(char letter)
 		default:
 			index = -1;
 	}
-
+	
+	//calculate and output value
 	if(index>=0){
 		return (steps_per_rev[index]*microsteps[index])/(num_pulley_teeth[index]*mm_per_tooth[index]*mm_per_thread[index]);
 	}
@@ -130,17 +132,9 @@ double stepsPerMM(char letter)
 	}
 }
 
-
-
-
-
-
-
-
-
-
 int main()
 {
+	//prints the value of each axis
 	printf("x: %f\n", stepsPerMM('X'));
 	printf("y: %f\n", stepsPerMM('Y'));
 	printf("z: %f\n", stepsPerMM('z'));
@@ -149,3 +143,5 @@ int main()
 	
 	return 0;
 }
+
+#endif /* AXIS_CONFIG_C_ */
