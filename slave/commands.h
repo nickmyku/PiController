@@ -16,13 +16,16 @@
 #define X_PIN 0
 #define Y_PIN 2
 #define Z_PIN 4
-#define LASER_PIN 3 
-#define X_DIR_PIN 1
+#define V_PIN 6
+#define LASER_PIN 1 
+#define X_DIR_PIN 10
 #define Y_DIR_PIN 3
 #define Z_DIR_PIN 5
+#define V_DIR_PIN 11
 #define LIM_X 17
 #define LIM_Y 18
 #define LIM_Z 19
+#define LIM_V 20
 
 /*
  * ***** COMMANDS *****
