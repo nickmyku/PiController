@@ -103,7 +103,7 @@ point "."
 <MOVEMENT>{yaxis}{digit}+{point}{digit}+ {/* M[0]1 Y#.# */yyless(1);BEGIN Y;}
 <MOVEMENT>{zaxis}{digit}+{point}{digit}+ {/* M[0]1 Z#.# */yyless(1);BEGIN Z;}
 <MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
-<MOVEMENT>{newline} {/* EOL of M[0]1 */dline++;sleep(3);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{newline} {/* EOL of M[0]1 */dline++;sleep(1);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 
 <X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
