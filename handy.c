@@ -50,19 +50,19 @@ int main(int argc, char **argv) {
 	pinMode(LIM_X, INPUT);
 	pinMode(LIM_Y, INPUT);
 	pinMode(LIM_Z, INPUT);
-/*
+
 	// set up watchdog thread (limit switch detection)
 	int rc = pthread_create(&lim_thread, NULL, lim_watchdog, (void *)NULL);
 	if(rc) {
 		printf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
 		pthread_exit(NULL);
 	}
-*/
+
 	initscr(); /* Start curses mode */
 	noecho(); /* Suppress outputting of characters as pressed */
 	while(c != 'q') {
 		printw("Handy Control System\n\n"); /* Print Header */
-		printw("Movement Speed: %d\n", speed);
+		printw("Movement Speed: %d mm/min\n", speed);
 		printw("Recieved key: %c\n\n", c);
 		printw("Key command reference:\ns - set speed\nq - quit\nu - X motor UP\nj - X motor DOWN\ni - Y motor UP\nk - Y motor DOWN\nl - fire laser (pew pew!)");
 		refresh(); /* Print it on to the real screen */
