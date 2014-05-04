@@ -53,7 +53,6 @@ typedef int flex_int32_t;
 typedef unsigned char flex_uint8_t; 
 typedef unsigned short int flex_uint16_t;
 typedef unsigned int flex_uint32_t;
-#endif /* ! C99 */
 
 /* Limits of integral types. */
 #ifndef INT8_MIN
@@ -83,6 +82,8 @@ typedef unsigned int flex_uint32_t;
 #ifndef UINT32_MAX
 #define UINT32_MAX             (4294967295U)
 #endif
+
+#endif /* ! C99 */
 
 #endif /* ! FLEXINT_H */
 
@@ -140,7 +141,15 @@ typedef unsigned int flex_uint32_t;
 
 /* Size of default input buffer. */
 #ifndef YY_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k.
+ * Moreover, YY_BUF_SIZE is 2*YY_READ_BUF_SIZE in the general case.
+ * Ditto for the __ia64__ case accordingly.
+ */
+#define YY_BUF_SIZE 32768
+#else
 #define YY_BUF_SIZE 16384
+#endif /* __ia64__ */
 #endif
 
 /* The state buf must be large enough to hold one state per character in the main buffer.
@@ -152,12 +161,7 @@ typedef unsigned int flex_uint32_t;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #endif
 
-#ifndef YY_TYPEDEF_YY_SIZE_T
-#define YY_TYPEDEF_YY_SIZE_T
-typedef size_t yy_size_t;
-#endif
-
-extern yy_size_t yyleng;
+extern int yyleng;
 
 extern FILE *yyin, *yyout;
 
@@ -183,6 +187,11 @@ extern FILE *yyin, *yyout;
 
 #define unput(c) yyunput( c, (yytext_ptr)  )
 
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
+
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
 struct yy_buffer_state
@@ -200,7 +209,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	yy_size_t yy_n_chars;
+	int yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -270,8 +279,8 @@ static YY_BUFFER_STATE * yy_buffer_stack = 0; /**< Stack as an array. */
 
 /* yy_hold_char holds the character lost when yytext is formed. */
 static char yy_hold_char;
-static yy_size_t yy_n_chars;		/* number of characters read into yy_ch_buf */
-yy_size_t yyleng;
+static int yy_n_chars;		/* number of characters read into yy_ch_buf */
+int yyleng;
 
 /* Points to current character in buffer. */
 static char *yy_c_buf_p = (char *) 0;
@@ -299,7 +308,7 @@ static void yy_init_buffer (YY_BUFFER_STATE b,FILE *file  );
 
 YY_BUFFER_STATE yy_scan_buffer (char *base,yy_size_t size  );
 YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str  );
-YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,yy_size_t len  );
+YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,int len  );
 
 void *yyalloc (yy_size_t  );
 void *yyrealloc (void *,yy_size_t  );
@@ -359,8 +368,8 @@ static void yy_fatal_error (yyconst char msg[]  );
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
 
-#define YY_NUM_RULES 18
-#define YY_END_OF_BUFFER 19
+#define YY_NUM_RULES 20
+#define YY_END_OF_BUFFER 21
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -368,14 +377,15 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static yyconst flex_int16_t yy_accept[61] =
+static yyconst flex_int16_t yy_accept[64] =
     {   0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-       19,   17,   16,   15,   17,   17,   10,   17,   17,   17,
-       17,   14,   17,   17,   17,   16,    0,    1,    0,    5,
-        3,    4,    0,    0,    0,    0,   14,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,    0,    0,    0,   11,
-       12,   13,    0,    9,    6,    7,    8,    0,    2,    0
+       21,   19,   18,   17,   19,   19,   12,   19,   19,   19,
+       19,   16,   19,   19,   19,   18,    0,    1,    0,    0,
+        7,    3,    4,    0,    0,    0,    0,   16,    0,    0,
+        0,    0,    0,    0,    5,    6,    0,    0,    0,    0,
+        0,    0,   13,   14,   15,    0,   11,    8,    9,   10,
+        0,    2,    0
     } ;
 
 static yyconst flex_int32_t yy_ec[256] =
@@ -416,60 +426,60 @@ static yyconst flex_int32_t yy_meta[17] =
         1,    1,    1,    1,    1,    1
     } ;
 
-static yyconst flex_int16_t yy_base[76] =
+static yyconst flex_int16_t yy_base[79] =
     {   0,
         0,   12,   24,    0,   39,    0,   45,    0,   51,    0,
-       87,   88,   84,   88,    0,   57,   88,    0,    0,    0,
-        0,   83,   80,   79,   78,   79,   74,   88,   74,   88,
-        5,   88,   74,   73,   62,   59,   41,    0,   33,    0,
-       32,    0,   30,    7,    8,    0,    0,    0,    0,    0,
-        0,    0,   12,    0,    0,    0,    0,   23,   88,   88,
-       67,   29,   28,   27,   26,   69,   71,   73,   25,   20,
-       17,   16,   15,   13,    1
+       92,   93,   89,   93,    0,   57,   93,    0,    0,    0,
+        0,   88,   85,   84,   83,   84,   79,   93,   61,    2,
+       93,    7,   93,   80,   79,   78,   77,   68,    0,   62,
+        0,   39,    0,   33,   93,   93,   14,    8,    0,    0,
+        0,    0,    0,    0,    0,   13,    0,    0,    0,    0,
+       26,   93,   93,   71,   31,   30,   29,   28,   73,   75,
+       77,   27,   26,   25,   19,   17,   16,    1
     } ;
 
-static yyconst flex_int16_t yy_def[76] =
+static yyconst flex_int16_t yy_def[79] =
     {   0,
-       61,   61,   61,    3,   61,    5,    5,    7,    7,    9,
-       60,   60,   60,   60,   60,   60,   60,   62,   63,   64,
-       65,   60,   66,   67,   68,   60,   60,   60,   16,   60,
-       60,   60,   62,   63,   64,   65,   60,   69,   66,   70,
-       67,   71,   68,   60,   60,   72,   73,   74,   75,   69,
-       70,   71,   60,   72,   73,   74,   75,   60,   60,    0,
-       60,   60,   60,   60,   60,   60,   60,   60,   60,   60,
-       60,   60,   60,   60,   60
+       64,   64,   64,    3,   64,    5,    5,    7,    7,    9,
+       63,   63,   63,   63,   63,   63,   63,   65,   66,   67,
+       68,   63,   69,   70,   71,   63,   63,   63,   63,   63,
+       63,   63,   63,   65,   66,   67,   68,   63,   72,   69,
+       73,   70,   74,   71,   63,   63,   63,   63,   75,   76,
+       77,   78,   72,   73,   74,   63,   75,   76,   77,   78,
+       63,   63,    0,   63,   63,   63,   63,   63,   63,   63,
+       63,   63,   63,   63,   63,   63,   63,   63
     } ;
 
-static yyconst flex_int16_t yy_nxt[105] =
+static yyconst flex_int16_t yy_nxt[110] =
     {   0,
-       60,   13,   14,   57,   27,   28,   44,   45,   44,   45,
-       45,   15,   16,   13,   14,   56,   58,   55,   54,   52,
-       53,   59,   51,   15,   16,   13,   17,   50,   36,   35,
-       34,   33,   59,   42,   18,   40,   38,   19,   20,   21,
-       22,   14,   37,   23,   23,   23,   23,   23,   23,   24,
+       63,   13,   14,   60,   27,   28,   45,   46,   47,   48,
+       48,   15,   16,   13,   14,   47,   48,   61,   59,   58,
+       56,   57,   62,   15,   16,   13,   17,   55,   54,   53,
+       37,   36,   35,   34,   18,   62,   43,   19,   20,   21,
+       22,   14,   41,   23,   23,   23,   23,   23,   23,   24,
        24,   24,   24,   24,   24,   25,   25,   25,   25,   25,
-       25,   29,   49,   30,   31,   48,   32,   12,   12,   12,
-       39,   39,   41,   41,   43,   43,   47,   46,   60,   28,
-       26,   42,   40,   38,   37,   26,   60,   11,   60,   60,
-       60,   60,   60,   60,   60,   60,   60,   60,   60,   60,
+       25,   29,   30,   31,   32,   39,   33,   31,   32,   38,
+       33,   12,   12,   12,   40,   40,   42,   42,   44,   44,
+       52,   51,   50,   49,   28,   26,   43,   41,   39,   38,
+       26,   63,   11,   63,   63,   63,   63,   63,   63,   63,
 
-       60,   60,   60,   60
+       63,   63,   63,   63,   63,   63,   63,   63,   63
     } ;
 
-static yyconst flex_int16_t yy_chk[105] =
+static yyconst flex_int16_t yy_chk[110] =
     {   0,
-        0,    1,    1,   75,   15,   15,   31,   31,   44,   44,
-       45,    1,    1,    2,    2,   74,   53,   73,   72,   71,
-       45,   53,   70,    2,    2,    3,    3,   69,   65,   64,
-       63,   62,   58,   43,    3,   41,   39,    3,    3,    3,
-        5,    5,   37,    5,    5,    5,    5,    5,    5,    7,
+        0,    1,    1,   78,   15,   15,   30,   30,   32,   32,
+       48,    1,    1,    2,    2,   47,   47,   56,   77,   76,
+       48,   75,   56,    2,    2,    3,    3,   74,   73,   72,
+       68,   67,   66,   65,    3,   61,   44,    3,    3,    3,
+        5,    5,   42,    5,    5,    5,    5,    5,    5,    7,
         7,    7,    7,    7,    7,    9,    9,    9,    9,    9,
-        9,   16,   36,   16,   16,   35,   16,   61,   61,   61,
-       66,   66,   67,   67,   68,   68,   34,   33,   29,   27,
-       26,   25,   24,   23,   22,   13,   11,   60,   60,   60,
-       60,   60,   60,   60,   60,   60,   60,   60,   60,   60,
+        9,   16,   16,   16,   16,   40,   16,   29,   29,   38,
+       29,   64,   64,   64,   69,   69,   70,   70,   71,   71,
+       37,   36,   35,   34,   27,   26,   25,   24,   23,   22,
+       13,   11,   63,   63,   63,   63,   63,   63,   63,   63,
 
-       60,   60,   60,   60
+       63,   63,   63,   63,   63,   63,   63,   63,   63
     } ;
 
 static yy_state_type yy_last_accepting_state;
@@ -490,7 +500,7 @@ char *yytext;
 #line 2 "PIC.l"
 /*
  ============================================================================
- Name        : PIC.c
+ Name        : PIC.l
  Author      : Anthony Cargile
  Version     :
  Copyright   : Copyright 2014 Embark Industries
@@ -508,14 +518,13 @@ char *yytext;
 #include <pthread.h>
 #include <math.h>
 #include <unistd.h>
+#include <stdbool.h>
+    
 #include "y.PIC.h"
 #include "slave/commands.h"
-
-#define DEBUG_FLAG 1
-#define COMPILED_FILE "/tmp/PIC.o"
-#define V_MAX 100 /* mm/min */
-#define NSEC_DELAY 500000 /* Nanoseconds between signals */
-
+#include "drivers/sx1509.h"
+#include "drivers/axis_config.h"
+    
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
 #include "gpio_dummy.h"
@@ -531,29 +540,39 @@ char *yytext;
 do {\
     printDebug(fmt, __LINE__, __FILE__, ## __VA_ARGS__);\
 } while(0)
+    
+#define COMPILED_FILE "/tmp/PIC.o"
+#define V_MAX (double)250.0 /* mm/min */
+#define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 
 // globals (don't hate):
-uint32_t daughter = 0x0; // daughter board shift register
 FILE *fcomp; // compiled output (/tmp file)
 int i2cfile;
+    
+// SX1509 Driver:
+int sx = -1;
+    
+// position storage (shared pthread memory)
 double pos_x = 0;
 double pos_y = 0;
 double pos_z = 0;
 double last_pos_x = 0;
 double last_pos_y = 0;
 double last_pos_z = 0;
-double X_limit = -1; // X-axis time (in ms) from 0 to its limit at full power
-double Y_limit = -1; // " " same for Y-axis
-double step_divisor = 1; // delta/step_divisor = #steps to move
+double x_steps_per_mm;
+double y_steps_per_mm;
+double z_steps_per_mm;
+double v_steps_per_mm;
 int dline = 0;
 char x_ready = 0;
 char y_ready = 0;
+pthread_t lim_thread;
 
 
 
 
 
-#line 557 "<stdout>"
+#line 576 "<stdout>"
 
 #define INITIAL 0
 #define MOVEMENT 1
@@ -596,7 +615,7 @@ FILE *yyget_out (void );
 
 void yyset_out  (FILE * out_str  );
 
-yy_size_t yyget_leng (void );
+int yyget_leng (void );
 
 char *yyget_text (void );
 
@@ -638,7 +657,12 @@ static int input (void );
 
 /* Amount of stuff to slurp up with each read. */
 #ifndef YY_READ_BUF_SIZE
+#ifdef __ia64__
+/* On IA-64, the buffer size is 16k, not 8k */
+#define YY_READ_BUF_SIZE 16384
+#else
 #define YY_READ_BUF_SIZE 8192
+#endif /* __ia64__ */
 #endif
 
 /* Copy whatever the last rule matched to the standard output. */
@@ -646,7 +670,7 @@ static int input (void );
 /* This used to be an fputs(), but since the string might contain NUL's,
  * we now use fwrite().
  */
-#define ECHO fwrite( yytext, yyleng, 1, yyout )
+#define ECHO do { if (fwrite( yytext, yyleng, 1, yyout )) {} } while (0)
 #endif
 
 /* Gets input and stuffs it into "buf".  number of characters read, or YY_NULL,
@@ -657,7 +681,7 @@ static int input (void );
 	if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
 		{ \
 		int c = '*'; \
-		yy_size_t n; \
+		size_t n; \
 		for ( n = 0; n < max_size && \
 			     (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
 			buf[n] = (char) c; \
@@ -739,10 +763,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 83 "PIC.l"
+#line 92 "PIC.l"
 
 
-#line 746 "<stdout>"
+#line 770 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -795,13 +819,13 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 61 )
+				if ( yy_current_state >= 64 )
 					yy_c = yy_meta[(unsigned int) yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 			++yy_cp;
 			}
-		while ( yy_base[yy_current_state] != 88 );
+		while ( yy_base[yy_current_state] != 93 );
 
 yy_find_action:
 		yy_act = yy_accept[yy_current_state];
@@ -827,98 +851,108 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 85 "PIC.l"
-{BEGIN MOVEMENT;}
+#line 94 "PIC.l"
+{/* M[0]1 */BEGIN MOVEMENT;}
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 86 "PIC.l"
+#line 95 "PIC.l"
 ;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 87 "PIC.l"
-{laseroff();}
+#line 96 "PIC.l"
+{/* M[0]3 */laseroff();}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 88 "PIC.l"
-{laseron();}
+#line 97 "PIC.l"
+{/* M[0]5 */laseron();}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 89 "PIC.l"
-{yyterminate();}
+#line 98 "PIC.l"
+{/* M10 */moveToLimit(sx, false, 200, true);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 91 "PIC.l"
-{yyless(1);BEGIN X;}
+#line 99 "PIC.l"
+{/* M11 */moveToLimit(sx, true, 200, true);}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 92 "PIC.l"
-{yyless(1);BEGIN Y;}
+#line 100 "PIC.l"
+{/* M[0]2 */yyterminate();}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 93 "PIC.l"
-{yyless(1);BEGIN Z;}
+#line 102 "PIC.l"
+{/* M[0]1 X#.# */yyless(1);BEGIN X;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 94 "PIC.l"
-;
+#line 103 "PIC.l"
+{/* M[0]1 Y#.# */yyless(1);BEGIN Y;}
 	YY_BREAK
 case 10:
-/* rule 10 can match eol */
 YY_RULE_SETUP
-#line 95 "PIC.l"
-{dline++;DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+#line 104 "PIC.l"
+{/* M[0]1 Z#.# */yyless(1);BEGIN Z;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 97 "PIC.l"
-{pos_x = strtod(yytext, NULL);DEBUG("X set to %f",pos_x);BEGIN MOVEMENT;}
+#line 105 "PIC.l"
+;
 	YY_BREAK
 case 12:
+/* rule 12 can match eol */
 YY_RULE_SETUP
-#line 98 "PIC.l"
-{pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
+#line 106 "PIC.l"
+{/* EOL of M[0]1 */dline++;sleep(1);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 99 "PIC.l"
-{pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
+#line 108 "PIC.l"
+{pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 100 "PIC.l"
-{DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
+#line 109 "PIC.l"
+{pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 15:
-/* rule 15 can match eol */
 YY_RULE_SETUP
-#line 102 "PIC.l"
-{dline++;}
+#line 110 "PIC.l"
+{pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 103 "PIC.l"
-;
+#line 111 "PIC.l"
+{DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 	YY_BREAK
 case 17:
+/* rule 17 can match eol */
 YY_RULE_SETUP
-#line 104 "PIC.l"
-{DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
+#line 113 "PIC.l"
+{dline++;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 106 "PIC.l"
+#line 114 "PIC.l"
+;
+	YY_BREAK
+case 19:
+YY_RULE_SETUP
+#line 115 "PIC.l"
+{DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
+	YY_BREAK
+case 20:
+YY_RULE_SETUP
+#line 117 "PIC.l"
 ECHO;
 	YY_BREAK
-#line 922 "<stdout>"
+#line 956 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(MOVEMENT):
 case YY_STATE_EOF(X):
@@ -1108,7 +1142,7 @@ static int yy_get_next_buffer (void)
 
 	else
 		{
-			yy_size_t num_to_read =
+			int num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
@@ -1122,7 +1156,7 @@ static int yy_get_next_buffer (void)
 
 			if ( b->yy_is_our_buffer )
 				{
-				yy_size_t new_size = b->yy_buf_size * 2;
+				int new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1153,7 +1187,7 @@ static int yy_get_next_buffer (void)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			(yy_n_chars), num_to_read );
+			(yy_n_chars), (size_t) num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = (yy_n_chars);
 		}
@@ -1214,7 +1248,7 @@ static int yy_get_next_buffer (void)
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 61 )
+			if ( yy_current_state >= 64 )
 				yy_c = yy_meta[(unsigned int) yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
@@ -1242,11 +1276,11 @@ static int yy_get_next_buffer (void)
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 61 )
+		if ( yy_current_state >= 64 )
 			yy_c = yy_meta[(unsigned int) yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
-	yy_is_jam = (yy_current_state == 60);
+	yy_is_jam = (yy_current_state == 63);
 
 	return yy_is_jam ? 0 : yy_current_state;
 }
@@ -1263,7 +1297,7 @@ static int yy_get_next_buffer (void)
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 		{ /* need to shift things up to make room */
 		/* +2 for EOB chars. */
-		register yy_size_t number_to_move = (yy_n_chars) + 2;
+		register int number_to_move = (yy_n_chars) + 2;
 		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
 		register char *source =
@@ -1312,7 +1346,7 @@ static int yy_get_next_buffer (void)
 
 		else
 			{ /* need more input */
-			yy_size_t offset = (yy_c_buf_p) - (yytext_ptr);
+			int offset = (yy_c_buf_p) - (yytext_ptr);
 			++(yy_c_buf_p);
 
 			switch ( yy_get_next_buffer(  ) )
@@ -1336,7 +1370,7 @@ static int yy_get_next_buffer (void)
 				case EOB_ACT_END_OF_FILE:
 					{
 					if ( yywrap( ) )
-						return 0;
+						return EOF;
 
 					if ( ! (yy_did_buffer_switch_on_eof) )
 						YY_NEW_FILE;
@@ -1588,7 +1622,7 @@ void yypop_buffer_state (void)
  */
 static void yyensure_buffer_stack (void)
 {
-	yy_size_t num_to_alloc;
+	int num_to_alloc;
     
 	if (!(yy_buffer_stack)) {
 
@@ -1680,16 +1714,17 @@ YY_BUFFER_STATE yy_scan_string (yyconst char * yystr )
 
 /** Setup the input buffer state to scan the given bytes. The next call to yylex() will
  * scan from a @e copy of @a bytes.
- * @param bytes the byte buffer to scan
- * @param len the number of bytes in the buffer pointed to by @a bytes.
+ * @param yybytes the byte buffer to scan
+ * @param _yybytes_len the number of bytes in the buffer pointed to by @a bytes.
  * 
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len )
+YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, int  _yybytes_len )
 {
 	YY_BUFFER_STATE b;
 	char *buf;
-	yy_size_t n, i;
+	yy_size_t n;
+	int i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -1771,7 +1806,7 @@ FILE *yyget_out  (void)
 /** Get the length of the current token.
  * 
  */
-yy_size_t yyget_leng  (void)
+int yyget_leng  (void)
 {
         return yyleng;
 }
@@ -1919,7 +1954,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 106 "PIC.l"
+#line 117 "PIC.l"
 
 
 
@@ -1929,36 +1964,39 @@ void yyfree (void * ptr )
 int main(int argc, char **argv) {
 	sanity(argc, argv);
 	yylex();
+    cleanup();
     pthread_exit(NULL);
-	return EXIT_SUCCESS;
+	exit(EXIT_SUCCESS);
 }
 
 /*
  * Rudimentary pre-execution...stuff.
  */
 int sanity(int argc, char **argv) {
+    // setup core components:
 	if(wiringPiSetup() == -1) {
 		eprintf("Pin setup failed!\n(Do you even root, bro?)\n");
-		exit(1);
+		pthread_exit(NULL);
 	}
 
 	if(argc <= 1) {
 		eprintf("Your argument is invalid.\nAnd you're a towel.\n");
-		exit(1);
+		pthread_exit(NULL);
 	}
 	
 	FILE *fp = NULL;
 	if((fp = fopen(argv[1], "r")) == NULL) {
 		eprintf("That file doesn't even exist.\nNice try, asshole.\n");
-		exit(1);
+		pthread_exit(NULL);
 	}
 	yyin = fp;
 	
 	if((fcomp = fopen(COMPILED_FILE, "wb")) == NULL) {
 		eprintf("Even Helen Keller knows you should be able to write to /tmp, and she's fucking dead.\n");
-		exit(1);
+		pthread_exit(NULL);
 	}
     
+    // set up pins:
     pinMode(X_PIN, OUTPUT);
     pinMode(Y_PIN, OUTPUT);
     pinMode(Z_PIN, OUTPUT);
@@ -1966,6 +2004,46 @@ int sanity(int argc, char **argv) {
     pinMode(Y_DIR_PIN, OUTPUT);
     pinMode(Z_DIR_PIN, OUTPUT);
     pinMode(LASER_PIN, PWM_OUTPUT);
+    pinMode(LIM_X, INPUT);
+    pinMode(LIM_Y, INPUT);
+    pinMode(LIM_Z, INPUT);
+    
+    // set up axis and motor parameters
+    x_steps_per_mm = stepsPerMM('x'); 	
+    y_steps_per_mm = stepsPerMM('y');
+    z_steps_per_mm = stepsPerMM('z');
+    v_steps_per_mm = stepsPerMM('v');
+    
+    // set up driver(s):
+    if((sx = initializeDevice()) == -1) {
+        eprintf("\"Fatal issue involving the driver\"\n-Princess Diana");
+        pthread_exit(NULL);
+    }
+    
+    // set up watchdog thread (limit switch detection)
+    int rc = pthread_create(&lim_thread, NULL, lim_watchdog, (void *)NULL);
+    if (rc){
+        eprintf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
+        pthread_exit(NULL);
+    }
+}
+
+/*
+ * Watch over limit switches and yank the plug if one trips
+ */
+void *lim_watchdog(void* ignored) {
+    struct timespec watchdelay;
+    watchdelay.tv_nsec = 50000; // tweak as needed
+    
+    while(1) {
+        nanosleep(&watchdelay,NULL);
+        if(digitalRead(LIM_X) != 1 || digitalRead(LIM_Y) != 1) {
+            eprintf("LIMIT SWITCH DEPRESSED; SYSTEM SHUTTING DOWN COMMIT SEPUKKU NOW!!!");
+            exit(1);
+            pthread_exit(NULL);
+        }
+        pthread_yield_np();
+    }
 }
 
 /*
@@ -1976,58 +2054,20 @@ void calibrate() {
 }
 
 /*
- * Initialize the i2c bus the a master node
- */
-//int i2cinit() {
-//    int err = 0;
-//    
-//    i2cfile = wiringPiI2CSetup(SLAVE_BUS_ID);
-//    if(i2cfile == -1) err++;
-//    DEBUG("Master bus initialized, or should be (%d)", err);
-//    
-//    // initialize the bus with the "hello" handshake:
-//    int op = OP_HELLO;
-//    if(write(i2cfile, &op, sizeof(int)) < 0) err++;
-//    sleep(1);
-//    if(read(i2cfile, &op, sizeof(int))) err++;
-//    if(op != OP_HELLO) {
-//        err++;
-//        DEBUG("Slave said: %d", op);
-//    }
-//    DEBUG("Handshake results: %d, circle-jerk status", err);
-//    
-//    if(err == 0) return 0;
-//    // else
-//    DEBUG("%d errors occurred while initializing the i2c bus.\nHave you considered stripping as a profession instead?", err);
-//    return -1;
-//}
-
-/*
- * Prints the actual deliverable, using compiled Gcode generated via Lex
- */
-//int printOut() {
-//    if(i2cinit() == -1) {
-//        eprintf("i2c failed to initialize.\nTake a shot every time you see this.");
-//        return -1;
-//    }
-//    
-//	return 0;
-//}
-
-/*
  * Prettyful debug function 
  * (DO NOT CALL THIS DIRECTLY - use DEBUG() instead, or else tiny elves will feast on your toes)
  */
 void printDebug(const char *fmt, const int line, const char *file, ...) {
+#ifdef DEBUG_FLAG
     va_list list;
     va_start(list, file);
 
-    if(DEBUG_FLAG) {
-      fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
-      vfprintf(stderr, fmt, list);
-      putc('\n',stderr);
-    }
+    fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
+    vfprintf(stderr, fmt, list);
+    putc('\n',stderr);
+    
     va_end(list);
+#endif /* DEBUG_FLAG */
 }
 
 /*
@@ -2049,19 +2089,27 @@ void eprintf(const char *fmt, ...) {
 /*
  * Thread entry point for moving the Y axis simultaneously with the X axis
  */
-struct timespec tim;
+struct timespec constdelay;
+struct timespec xdelay;
+struct timespec ydelay;
+double y_writes;
+double x_writes;
+double steps_x;
+double steps_y;
 void *simul_y(void *targv) {
-    int i;
+    double i;
     int *argv = (int *)targv;
     DEBUG("Y thread initiated");
-    for(i = 0; i <= argv[0]; i++) {
-        DEBUG("Writing Y signals...");
+    for(i = 0.0; i <= fabs(steps_y); i++) {
         digitalWrite(Y_PIN, 1);
-        nanosleep(&tim,NULL);
+        nanosleep(&ydelay,NULL);
         digitalWrite(Y_PIN, 0);
-        nanosleep(&tim,NULL);
+        nanosleep(&ydelay,NULL);
+        y_writes++;
         pthread_yield_np(); 
     }
+    steps_y = 0.0; // allows X/main thread to proceed
+    DEBUG("Wrote %f Y signals",y_writes);
     
     pthread_exit(NULL);
 }
@@ -2073,12 +2121,16 @@ void axis_updated() {
     double dx;
     double dy;
     double dz;
-    double steps_x;
-    double steps_y;
     double steps_z;
-    int i;
+    double x_vel;
+    double y_vel;
+    double temp_x_time;
+    double temp_y_time;
+    double nano_x_time;
+    double nano_y_time;
+    double i;
     
-    DEBUG("From: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
+    DEBUG("\nFrom: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
     
     dx = pos_x - last_pos_x;
     dy = pos_y - last_pos_y;
@@ -2086,29 +2138,53 @@ void axis_updated() {
     last_pos_x = pos_x;
     last_pos_y = pos_y;
     last_pos_z = pos_z;
-    pos_x = pos_y = pos_z = -1;
+    pos_x = pos_y = pos_z = -1.0;
+    x_writes = y_writes = 0.0;
     
-    steps_x = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dy*dy)/(dx*dx)))); // mm/sec
-    steps_y = sqrt((double)((V_MAX * V_MAX)*60) / (1 + ((dx*dx)/(dy*dy)))); // mm/sec
-    tim.tv_nsec = NSEC_DELAY; // .5s, to stagged state changes
+    steps_x = dx*x_steps_per_mm;
+    steps_y = dy*y_steps_per_mm;
     
-    DEBUG("Moving X %f steps at %f mm/s and Y %f steps at %f mm/s",dx,steps_x,dy,steps_y);
+    DEBUG("dX: %f, dY: %f",dx,dy);
+        
+    if((dx != 0) && (dy != 0))
+    {
+    	x_vel = sqrt((V_MAX*V_MAX)/(1+((dy*dy)/(dx*dx))));
+    	y_vel = sqrt((V_MAX*V_MAX)/(1+((dx*dx)/(dy*dy))));
+        
+    }
+    else
+    {
+    	x_vel = V_MAX;
+    	y_vel = V_MAX;
+    }
+    
+    temp_x_time = 1/((x_vel*x_steps_per_mm)/60000);	//calculate ms delay for x step
+    temp_y_time = 1/((y_vel*y_steps_per_mm)/60000);	//calculate ms delay for y step
+    
+    nano_x_time = ((temp_x_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    nano_y_time = ((temp_y_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    
+    xdelay.tv_nsec = (long)nano_x_time;
+    ydelay.tv_nsec = (long)nano_y_time;
+    constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
+        
+    DEBUG("\nX %f steps at %f mm/s (d. %ld)\nY %f steps at %f mm/s (d. %ld)", steps_x, x_vel,xdelay.tv_nsec,steps_y,y_vel,ydelay.tv_nsec);
     
     // directional pins
-    if(dx > 0) {
+    if(dx >= 0.0) {
         digitalWrite(X_DIR_PIN, 1);
     }
     else {
         digitalWrite(X_DIR_PIN, 0);
     }
-    if(dy > 0) {
+    if(dy >= 0.0) {
         digitalWrite(Y_DIR_PIN, 1);
     }
     else {
         digitalWrite(Y_DIR_PIN, 0);
     }
     
-    if(steps_y) {
+    if(steps_y != 0.0) {
         pthread_t y_thread;
         int rc;
         int argv[2];
@@ -2121,15 +2197,25 @@ void axis_updated() {
             pthread_exit(NULL);
         }
     }
-    if(steps_x != 0) {
-        for(i = 0; i <= steps_x; i++) {
-            DEBUG("Writing X signals...");
+    
+    if(steps_x != 0.0) {
+        for(i = 0.0; i <= fabs(steps_x); i++) {
             digitalWrite(X_PIN, 1);
-            nanosleep(&tim,NULL);
+            nanosleep(&xdelay,NULL);
             digitalWrite(X_PIN, 0);
-            nanosleep(&tim,NULL);
+            nanosleep(&xdelay,NULL);
+            x_writes++;
             pthread_yield_np(); 
         }
+        DEBUG("Wrote %f X signals",x_writes);
+    }
+    
+    if(steps_y != 0.0) {
+        // wait for Y movement to finish
+        do {
+            pthread_yield_np();
+        }
+        while(steps_y != 0.0);
     }
 }
 
@@ -2144,5 +2230,21 @@ int laser(double power) {
 	}
 	
 	return 0;
+}
+
+/*
+ * Last thing we do - close files, sync FS, turn off pins etc.
+ */
+void cleanup() {
+    pthread_cancel(lim_thread);
+    digitalWrite(X_PIN,0);
+    digitalWrite(Y_PIN,0);
+    digitalWrite(Z_PIN,0);
+    digitalWrite(X_DIR_PIN,0);
+    digitalWrite(Y_DIR_PIN,0);
+    digitalWrite(Z_DIR_PIN,0);
+    digitalWrite(LASER_PIN,0);
+    fclose(fcomp);
+    system("sync");
 }
 

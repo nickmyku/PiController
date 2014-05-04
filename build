@@ -1,3 +1,4 @@
 #!/bin/bash
 # Use this file when building locally
 lex -t PIC.l > PIC.c && gcc -DDEBUG_FLAG -o PIC gpio_dummy.c PIC.c drivers/sx1509.c drivers/axis_config.c -ll -lpthread -lfl -lm
+./buildhandy
