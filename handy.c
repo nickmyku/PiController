@@ -93,19 +93,19 @@ int main(int argc, char **argv) {
 				noecho();
 			case 'u':
 				digitalWrite(X_DIR_PIN, 1);
-				move(X_PIN, speed);
+				move_pin(X_PIN, speed);
 				break;
 			case 'j':
 				digitalWrite(X_DIR_PIN, 0);
-				move(X_PIN, speed);
+				move_pin(X_PIN, speed);
 				break;
 			case 'i':
 				digitalWrite(Y_DIR_PIN, 1);
-				move(Y_PIN, speed);
+				move_pin(Y_PIN, speed);
 				break;
 			case 'k':
 				digitalWrite(Y_DIR_PIN, 0);
-				move(Y_PIN, speed);
+				move_pin(Y_PIN, speed);
 				break;
 			case 'l':
     				ldelay.tv_nsec = 500; // tweak as needed
