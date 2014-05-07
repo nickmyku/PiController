@@ -7,7 +7,7 @@
  * Copyright 2014 Embark Industries, all rights reserved. 
  */
 
-void move_pin(int pin, int speed);
+void move_pin(int pin, int speed, double steps_per_mm);
 void *lim_watchdog(void* ignored);
 
 #endif /* HANDY_H_ */
