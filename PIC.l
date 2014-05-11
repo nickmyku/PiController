@@ -112,11 +112,11 @@ sign "-"
 <Z>{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <V>{digit}+{point}{digit}+ {pos_v = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <L>{digit}+{point}{digit}+ {l_power = strtod(yytext, NULL);BEGIN MOVEMENT;}
-<X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
+<X,Y,Z,V>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 
-<INITIAL,X,Y,Z>{newline} {dline++;}
+<INITIAL,X,Y,Z,V>{newline} {dline++;}
 <MOVEMENT,INITIAL>{whitespace}+ ;
-<INITIAL,MOVEMENT,X,Y,Z>. {DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
+<INITIAL,MOVEMENT,X,Y,Z,V>. {DEBUG("I didn't sign up for this: '%s' (line %d)", yytext, dline);}
 
 %%
 
@@ -409,7 +409,7 @@ void axis_updated() {
         DEBUG("Wrote %f X signals",x_writes);
     }
     
-    if(steps_y != 0.0 || steps_z != 0.0 || steps_v != 0.0) {
+    if(steps_y != 0.0) {
         // wait for Y movement to finish
         do {
             pthread_yield_np();
