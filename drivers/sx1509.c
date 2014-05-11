@@ -12,6 +12,8 @@
 #include <math.h>
 #include <time.h>
 
+#include "../y.PIC.h" // DEBUG()
+
 // wiringPi included by PIC.l
 
 #define writeReg(dev,reg,data) wiringPiI2CWriteReg8(dev,reg,data)

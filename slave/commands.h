@@ -17,7 +17,7 @@
 #define Y_PIN 2
 #define Z_PIN 4
 #define V_PIN 6
-#define LASER_PIN 1 
+#define LASER_PIN 1
 #define X_DIR_PIN 10
 #define Y_DIR_PIN 3
 #define Z_DIR_PIN 5

@@ -36,12 +36,6 @@
 #define pthread_yield_np() pthread_yield(NULL)
 #endif
 
-// use this to provide dev-only feedback. See printDebug() too. 
-#define DEBUG(fmt, ...)\
-do {\
-    printDebug(fmt, __LINE__, __FILE__, ## __VA_ARGS__);\
-} while(0)
-    
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_MAX (double)250.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
@@ -57,6 +51,7 @@ int sx = -1;
 double pos_x = 0;
 double pos_y = 0;
 double pos_z = 0;
+double l_power = 0.0; // laser intensity, from 0.0 to 100.0
 double last_pos_x = 0;
 double last_pos_y = 0;
 double last_pos_z = 0;
@@ -75,6 +70,7 @@ pthread_t lim_thread;
 %s X
 %s Y
 %s Z
+%s L
 
 letter [a-zA-Z]
 digit [0-9]
@@ -86,6 +82,7 @@ general "G"
 xaxis "X"
 yaxis "Y"
 zaxis "Z"
+laxis "L"
 faxis "F"
 point "."
 
@@ -93,21 +90,23 @@ point "."
 
 <INITIAL>{general}"0"?"1" {/* M[0]1 */BEGIN MOVEMENT;}
 <INITIAL>{misc}"0"?"3"{whitespace}*{newline}+{misc}"0"?"5" ;
-<INITIAL>{misc}"0"?"3" {/* M[0]3 */laseroff();}
-<INITIAL>{misc}"0"?"5" {/* M[0]5 */laseron();}
+<INITIAL>{misc}"0"?"3" {/* M[0]3 */}
+<INITIAL>{misc}"0"?"5" {/* M[0]5 */}
 <INITIAL>{misc}"1""0" {/* M10 */moveToLimit(sx, false, 200, true);}
 <INITIAL>{misc}"1""1" {/* M11 */moveToLimit(sx, true, 200, true);}
 <INITIAL>{misc}"0"?"2" {/* M[0]2 */yyterminate();}
 
-<MOVEMENT>{xaxis}{digit}+{point}{digit}+ {/* M[0]1 X#.# */yyless(1);BEGIN X;}
-<MOVEMENT>{yaxis}{digit}+{point}{digit}+ {/* M[0]1 Y#.# */yyless(1);BEGIN Y;}
-<MOVEMENT>{zaxis}{digit}+{point}{digit}+ {/* M[0]1 Z#.# */yyless(1);BEGIN Z;}
+<MOVEMENT>{xaxis}{digit}+{point}{digit}+ {/* G[0]1 X#.# */yyless(1);BEGIN X;}
+<MOVEMENT>{yaxis}{digit}+{point}{digit}+ {/* G[0]1 Y#.# */yyless(1);BEGIN Y;}
+<MOVEMENT>{zaxis}{digit}+{point}{digit}+ {/* G[0]1 Z#.# */yyless(1);BEGIN Z;}
+<MOVEMENT>{laxis}{digit}+{point}{digit}+ {/* L#.# */yyless(1);BEGIN L;}
 <MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
 <MOVEMENT>{newline} {/* EOL of M[0]1 */dline++;sleep(1);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 
 <X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Z>{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
+<L>{digit}+{point}{digit}+ {l_power = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 
 <INITIAL,X,Y,Z>{newline} {dline++;}
@@ -161,7 +160,7 @@ int sanity(int argc, char **argv) {
     pinMode(X_DIR_PIN, OUTPUT);
     pinMode(Y_DIR_PIN, OUTPUT);
     pinMode(Z_DIR_PIN, OUTPUT);
-    pinMode(LASER_PIN, PWM_OUTPUT);
+    pinMode(LASER_PIN, OUTPUT);
     pinMode(LIM_X, INPUT);
     pinMode(LIM_Y, INPUT);
     pinMode(LIM_Z, INPUT);
@@ -287,6 +286,9 @@ void axis_updated() {
     double nano_x_time;
     double nano_y_time;
     double i;
+
+    DEBUG("Turning laser %s", (l_power > 0.0)?("on"):("off"));
+    laser(l_power);
     
     DEBUG("\nFrom: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
     
@@ -375,6 +377,10 @@ void axis_updated() {
         }
         while(steps_y != 0.0);
     }
+
+    DEBUG("No Mr. Bond, I expect you to (NOT) die!");
+    l_power = 0.0;
+    laser(l_power); // last one out, get the lights
 }
 
 /*
@@ -384,6 +390,17 @@ int laser(double power) {
 	// leave this in, it has a legitimate purpose I promise
 	if(ON_A_SHARK_HEAD) {
 		eprintf("Kiss my black ass, Dr. Evil. Mr. Bigglesworth too!");
+		return -1;
+	}
+
+	if(power == 100.0) {
+		digitalWrite(LASER_PIN, 1);
+	}
+	else if(power == 0.0) {
+		digitalWrite(LASER_PIN, 0);
+	}
+	else {
+		DEBUG("What we have here is a laser incapable of PWM control");
 		return -1;
 	}
 	
