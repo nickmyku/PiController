@@ -1,4 +1,5 @@
 #ifndef AXIS_CONFIG_H_
+#define AXIS_CONFIG_H_
 //header file for axis and motor configuration
 //created by Nicholas Mykuylowycz
 //created on May 1, 2014

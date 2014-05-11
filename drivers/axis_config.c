@@ -1,4 +1,5 @@
 #ifndef AXIS_CONFIG_C_
+#define AXIS_CONFIG_C_
 //file which sets up motor and axis parameters
 //Nicholas Mykulowycz
 //Created May 1, 2014

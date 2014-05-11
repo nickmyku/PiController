@@ -48,13 +48,15 @@ int i2cfile;
 int sx = -1;
     
 // position storage (shared pthread memory)
-double pos_x = 0;
-double pos_y = 0;
-double pos_z = 0;
+double pos_x = 0.0;
+double pos_y = 0.0;
+double pos_z = 0.0;
+double pos_v = 0.0;
 double l_power = 0.0; // laser intensity, from 0.0 to 100.0
-double last_pos_x = 0;
-double last_pos_y = 0;
-double last_pos_z = 0;
+double last_pos_x = 0.0;
+double last_pos_y = 0.0;
+double last_pos_z = 0.0;
+double last_pos_v = 0.0;
 double x_steps_per_mm;
 double y_steps_per_mm;
 double z_steps_per_mm;
@@ -70,6 +72,7 @@ pthread_t lim_thread;
 %s X
 %s Y
 %s Z
+%s V
 %s L
 
 letter [a-zA-Z]
@@ -82,13 +85,12 @@ general "G"
 xaxis "X"
 yaxis "Y"
 zaxis "Z"
+vaxis "V"
 laxis "L"
-faxis "F"
 point "."
-
 %%
 
-<INITIAL>{general}"0"?"1" {/* M[0]1 */BEGIN MOVEMENT;}
+<INITIAL>{general}"0"?"1" {/* G[0]1 */BEGIN MOVEMENT;}
 <INITIAL>{misc}"0"?"3"{whitespace}*{newline}+{misc}"0"?"5" ;
 <INITIAL>{misc}"0"?"3" {/* M[0]3 */}
 <INITIAL>{misc}"0"?"5" {/* M[0]5 */}
@@ -99,13 +101,15 @@ point "."
 <MOVEMENT>{xaxis}{digit}+{point}{digit}+ {/* G[0]1 X#.# */yyless(1);BEGIN X;}
 <MOVEMENT>{yaxis}{digit}+{point}{digit}+ {/* G[0]1 Y#.# */yyless(1);BEGIN Y;}
 <MOVEMENT>{zaxis}{digit}+{point}{digit}+ {/* G[0]1 Z#.# */yyless(1);BEGIN Z;}
-<MOVEMENT>{laxis}{digit}+{point}{digit}+ {/* L#.# */yyless(1);BEGIN L;}
-<MOVEMENT>{faxis}{digit}+{point}{digit}+ ;
-<MOVEMENT>{newline} {/* EOL of M[0]1 */dline++;sleep(1);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{vaxis}{digit}+{point}{digit}+ {/* G[0]1 V#.# */yyless(1);BEGIN V;}
+<MOVEMENT>{laxis}{digit}+{point}{digit}+ {/* G[0]1 L#.# */yyless(1);BEGIN L;}
+<MOVEMENT>{newline} {/* EOL of G[0]1 */dline++;sleep(1);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+<MOVEMENT><<EOF>> {/* EOF during G[0]1 reading */dline++;axis_updated();DEBUG("EOF and Axis Updated (%d)", dline);yyterminate();}
 
 <X>{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Z>{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
+<V>{digit}+{point}{digit}+ {pos_v = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <L>{digit}+{point}{digit}+ {l_power = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 
@@ -253,6 +257,8 @@ double y_writes;
 double x_writes;
 double steps_x;
 double steps_y;
+double steps_z;
+double steps_v;
 void *simul_y(void *targv) {
     double i;
     int *argv = (int *)targv;
@@ -277,8 +283,8 @@ void *simul_y(void *targv) {
 void axis_updated() {
     double dx;
     double dy;
+    double dv;
     double dz;
-    double steps_z;
     double x_vel;
     double y_vel;
     double temp_x_time;
@@ -295,17 +301,21 @@ void axis_updated() {
     dx = pos_x - last_pos_x;
     dy = pos_y - last_pos_y;
     dz = pos_z - last_pos_z;
+    dv = pos_v - last_pos_v;
     last_pos_x = pos_x;
     last_pos_y = pos_y;
     last_pos_z = pos_z;
-    pos_x = pos_y = pos_z = -1.0;
+    last_pos_v = pos_v;
+    pos_x = pos_y = pos_z = pos_v = 0.0; // changed from -1.0 by AC@5/11/14
     x_writes = y_writes = 0.0;
     
     steps_x = dx*x_steps_per_mm;
     steps_y = dy*y_steps_per_mm;
+    steps_z = stepsPerMM('Z') * dz;
+    steps_v = stepsPerMM('V') * dv;
     
-    DEBUG("dX: %f, dY: %f",dx,dy);
-        
+    DEBUG("dX: %f, dY: %f, dZ: %f, dV: %f",dx,dy,dz,dv);
+
     if((dx != 0) && (dy != 0))
     {
     	x_vel = sqrt((V_MAX*V_MAX)/(1+((dy*dy)/(dx*dx))));
@@ -343,7 +353,32 @@ void axis_updated() {
     else {
         digitalWrite(Y_DIR_PIN, 0);
     }
+
+    // Z Axis
+    if(steps_z != 0.0) {
+	if(dz >= 0.0) digitalWrite(Z_DIR_PIN, 1);
+	else digitalWrite(Z_DIR_PIN, 0);
+	for(i = 0.0; i <= fabs(steps_z); i++) {
+	    digitalWrite(Z_PIN, 1);
+            nanosleep(&constdelay,NULL);
+            digitalWrite(Z_PIN, 0);
+            nanosleep(&constdelay,NULL);
+	}
+    }
+
+    // V Axis 
+    if(steps_v != 0.0) {
+	if(dv >= 0.0) digitalWrite(V_DIR_PIN, 1);
+	else digitalWrite(V_DIR_PIN, 0);
+	for(i = 0.0; i <= fabs(steps_v); i++) {
+	    digitalWrite(V_PIN, 1);
+            nanosleep(&constdelay,NULL);
+            digitalWrite(V_PIN, 0);
+            nanosleep(&constdelay,NULL);
+	}
+    }
     
+    // Y Axis (threaded and gluten-free!)
     if(steps_y != 0.0) {
         pthread_t y_thread;
         int rc;
@@ -358,6 +393,7 @@ void axis_updated() {
         }
     }
     
+    // X Axis
     if(steps_x != 0.0) {
         for(i = 0.0; i <= fabs(steps_x); i++) {
             digitalWrite(X_PIN, 1);
@@ -370,7 +406,7 @@ void axis_updated() {
         DEBUG("Wrote %f X signals",x_writes);
     }
     
-    if(steps_y != 0.0) {
+    if(steps_y != 0.0 || steps_z != 0.0 || steps_v != 0.0) {
         // wait for Y movement to finish
         do {
             pthread_yield_np();
