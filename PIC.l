@@ -88,6 +88,7 @@ zaxis "Z"
 vaxis "V"
 laxis "L"
 point "."
+sign "-"
 %%
 
 <INITIAL>{general}"0"?"1" {/* G[0]1 */BEGIN MOVEMENT;}
@@ -98,11 +99,11 @@ point "."
 <INITIAL>{misc}"1""1" {/* M11 */moveToLimit(sx, true, 200, true);}
 <INITIAL>{misc}"0"?"2" {/* M[0]2 */yyterminate();}
 
-<MOVEMENT>{xaxis}{digit}+{point}{digit}+ {/* G[0]1 X#.# */yyless(1);BEGIN X;}
-<MOVEMENT>{yaxis}{digit}+{point}{digit}+ {/* G[0]1 Y#.# */yyless(1);BEGIN Y;}
-<MOVEMENT>{zaxis}{digit}+{point}{digit}+ {/* G[0]1 Z#.# */yyless(1);BEGIN Z;}
-<MOVEMENT>{vaxis}{digit}+{point}{digit}+ {/* G[0]1 V#.# */yyless(1);BEGIN V;}
-<MOVEMENT>{laxis}{digit}+{point}{digit}+ {/* G[0]1 L#.# */yyless(1);BEGIN L;}
+<MOVEMENT>{xaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 X#.# */yyless(1);BEGIN X;}
+<MOVEMENT>{yaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 Y#.# */yyless(1);BEGIN Y;}
+<MOVEMENT>{zaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 Z#.# */yyless(1);BEGIN Z;}
+<MOVEMENT>{vaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 V#.# */yyless(1);BEGIN V;}
+<MOVEMENT>{laxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 L#.# */yyless(1);BEGIN L;}
 <MOVEMENT>{newline} {/* EOL of G[0]1 */dline++;sleep(1);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 <MOVEMENT><<EOF>> {/* EOF during G[0]1 reading */dline++;axis_updated();DEBUG("EOF and Axis Updated (%d)", dline);yyterminate();}
 
@@ -125,8 +126,8 @@ point "."
 int main(int argc, char **argv) {
 	sanity(argc, argv);
 	yylex();
-    cleanup();
-    pthread_exit(NULL);
+        cleanup();
+        pthread_exit(NULL);
 	exit(EXIT_SUCCESS);
 }
 
@@ -161,9 +162,11 @@ int sanity(int argc, char **argv) {
     pinMode(X_PIN, OUTPUT);
     pinMode(Y_PIN, OUTPUT);
     pinMode(Z_PIN, OUTPUT);
+    pinMode(V_PIN, OUTPUT);
     pinMode(X_DIR_PIN, OUTPUT);
     pinMode(Y_DIR_PIN, OUTPUT);
     pinMode(Z_DIR_PIN, OUTPUT);
+    pinMode(V_DIR_PIN, OUTPUT);
     pinMode(LASER_PIN, OUTPUT);
     pinMode(LIM_X, INPUT);
     pinMode(LIM_Y, INPUT);
@@ -451,9 +454,11 @@ void cleanup() {
     digitalWrite(X_PIN,0);
     digitalWrite(Y_PIN,0);
     digitalWrite(Z_PIN,0);
+    digitalWrite(V_PIN,0);
     digitalWrite(X_DIR_PIN,0);
     digitalWrite(Y_DIR_PIN,0);
     digitalWrite(Z_DIR_PIN,0);
+    digitalWrite(V_DIR_PIN,0);
     digitalWrite(LASER_PIN,0);
     fclose(fcomp);
     system("sync");
