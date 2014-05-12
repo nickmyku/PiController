@@ -111,6 +111,8 @@ sign "-"
 <Y>{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Z>{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <V>{digit}+{point}{digit}+ {pos_v = strtod(yytext, NULL);BEGIN MOVEMENT;}
+<Z>{sign}{digit}+{point}{digit}+ {yyless(1); pos_z = strtod(yytext, NULL)*(-1.0);BEGIN MOVEMENT;}
+<V>{sign}{digit}+{point}{digit}+ {yyless(1); pos_v = strtod(yytext, NULL)*(-1.0);BEGIN MOVEMENT;}
 <L>{digit}+{point}{digit}+ {l_power = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <X,Y,Z>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 
