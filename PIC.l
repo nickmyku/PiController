@@ -111,7 +111,6 @@ sign "-"
 <Y>{sign}?{digit}+{point}{digit}+ {pos_y = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <Z>{sign}?{digit}+{point}{digit}+ {pos_z = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <V>{sign}?{digit}+{point}{digit}+ {pos_v = strtod(yytext, NULL);BEGIN MOVEMENT;}
-
 <L>{digit}+{point}{digit}+ {l_power = strtod(yytext, NULL);BEGIN MOVEMENT;}
 <X,Y,Z,V>{whitespace}+ {DEBUG("What, did Charlie Sheen write this shit? (line %d)", dline);BEGIN MOVEMENT;}
 
@@ -126,10 +125,15 @@ sign "-"
  */
 int main(int argc, char **argv) {
 	sanity(argc, argv);
+	LEDColor(sx, 0, 255, 0, 0);	//set LEDs to red to indicate print in progress
+	LEDColor(sx, 1, 255, 0, 0);
 	yylex();
         cleanup();
+        LEDColor(sx, 0, 0, 255, 0);	//set LEDS to gree to indicate pritning finished
+	LEDColor(sx, 1, 0, 255, 0);
         pthread_exit(NULL);
 	exit(EXIT_SUCCESS);
+	
 }
 
 /*
