@@ -21,6 +21,7 @@
 #include "handy.h"
 #include "slave/commands.h" 		/* for the pin definitions  */
 #include "drivers/axis_config.h"	/* defines motor parameters */
+#include "drivers/sx1509.h"		/* driver for W axis and LEDs*/
 
 #define V_MAX (double)250.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
@@ -32,6 +33,9 @@ double steps_per_mm_y;
 double steps_per_mm_z;
 double steps_per_mm_v;
 pthread_t lim_thread;
+
+// SX1509 Driver:
+int sx = -1;
 
 int main(int argc, char **argv) {
 	char c = ' ';
@@ -58,18 +62,27 @@ int main(int argc, char **argv) {
 	pinMode(LIM_Z, INPUT);
 	pinMode(LIM_V, INPUT);
 	
+	// set up driver(s):
+    	if((sx = initializeDevice()) == -1) {
+        	printf("\"Fatal issue involving the driver\"\n-Princess Diana");
+        	pthread_exit(NULL);
+    	}
+	
 	//set up motor paramters
 	steps_per_mm_x = stepsPerMM('x');
 	steps_per_mm_y = stepsPerMM('y');
 	steps_per_mm_z = stepsPerMM('z');
 	steps_per_mm_v = stepsPerMM('v');
-
+	
 	// set up watchdog thread (limit switch detection)
 	int rc = pthread_create(&lim_thread, NULL, lim_watchdog, (void *)NULL);
 	if(rc) {
 		printf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
 		pthread_exit(NULL);
 	}
+	
+	LEDColor(sx, 0, 255, 0, 0);	//turn LEDs red
+	LEDColor(sx, 1, 255, 0, 0);
 
 	initscr(); /* Start curses mode */
 	noecho(); /* Suppress outputting of characters as pressed */
@@ -77,7 +90,7 @@ int main(int argc, char **argv) {
 		printw("Handy Control System\n\n"); /* Print Header */
 		printw("Movement Speed: %d mm/min\n", speed);
 		printw("Recieved key: %c\n\n", c);
-		printw("Key command reference:\ne - set speed\nq - quit\n\nw - X motor UP\ns - X motor DOWN\nd - Y motor UP\na - Y motor DOWN\n\nr - Z motor UP\nf - Z motor DOWN\nt - V motor UP\ng - V motor DOWN\n\nl - fire laser (pew pew!)");
+		printw("Key command reference:\ne - set speed\nq - quit\n\nw - X motor UP\ns - X motor DOWN\nd - Y motor UP\na - Y motor DOWN\n\nr - Z motor UP\nf - Z motor DOWN\nt - V motor UP\ng - V motor DOWN\n\nZ - W axis minimum limit\nX - W axis maximum limit\n\nl - fire laser (pew pew!)");
 		refresh(); /* Print it on to the real screen */
 		c = getch(); /* Wait for user input */
 		switch(c) {
@@ -104,7 +117,7 @@ int main(int argc, char **argv) {
 				printw("New speed set to %d mm/min\nPress the any key to continue. . .", speed);
 				getch(); // good old DOS humor
 				noecho();
-			case 'w':						//had to change to WASD keys, played to many pc games as a kid
+			case 'w':						//had to change to WASD keys, played too many pc games as a kid
 				digitalWrite(X_DIR_PIN, 1);
 				move_pin(X_PIN, speed, steps_per_mm_x);
 				break;
@@ -136,11 +149,29 @@ int main(int argc, char **argv) {
 				digitalWrite(V_DIR_PIN, 0);
 				move_pin(V_PIN, speed, steps_per_mm_v);
 				break;
+			case 'z':
+				LEDColor(sx, 0, 255, 255, 0);	//turn LEDs yellow
+				LEDColor(sx, 1, 255, 255, 0);
+				moveToLimit(sx, FALSE, 255, TRUE);
+				LEDColor(sx, 0, 255, 0, 0);	//turn LEDs back to red
+				LEDColor(sx, 1, 255, 0, 0);
+				break;
+			case 'x':
+				LEDColor(sx, 0, 255, 255, 0);	//turn LEDs yellow
+				LEDColor(sx, 1, 255, 255, 0);
+				moveToLimit(sx, TRUE, 255, TRUE);
+				LEDColor(sx, 0, 255, 0, 0);	//turn LEDs back to red
+				LEDColor(sx, 1, 255, 0, 0);
+				break;
 			case 'l':
+				LEDColor(sx, 0, 0, 0, 255);	//turn LEDs blue
+				LEDColor(sx, 1, 0, 0, 255);
     				ldelay.tv_nsec = 500; // tweak as needed
 				digitalWrite(LASER_PIN, 1);
 				nanosleep(&ldelay,NULL);
 				digitalWrite(LASER_PIN, 0);
+				LEDColor(sx, 0, 255, 0, 0);	//turn LEDs back to red
+				LEDColor(sx, 1, 255, 0, 0);
 				break;
 			default:
 				printw("Caught: %c\n", c);
@@ -148,6 +179,8 @@ int main(int argc, char **argv) {
 		}
 		clear();
 	}
+	LEDColor(sx, 0, 0, 0, 0);	//turn off LEDS
+	LEDColor(sx, 1, 0, 0, 0);
 	endwin(); /* End curses mode */
 	return EXIT_SUCCESS;
 }
@@ -197,4 +230,21 @@ void *lim_watchdog(void* ignored) {
         }
         pthread_yield_np();
     }
+}
+
+/*
+ * Prettyful debug function 
+ * (DO NOT CALL THIS DIRECTLY - use DEBUG() instead, or else tiny elves will feast on your toes)
+ */
+void printDebug(const char *fmt, const int line, const char *file, ...) {
+#ifdef DEBUG_FLAG
+    va_list list;
+    va_start(list, file);
+
+    fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
+    vfprintf(stderr, fmt, list);
+    putc('\n',stderr);
+    
+    va_end(list);
+#endif /* DEBUG_FLAG */
 }

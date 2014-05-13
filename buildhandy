@@ -1,2 +1,2 @@
 #!/bin/bash
-gcc -o handy drivers/axis_config.c -lncurses -lwiringPi handy.c
+gcc -o handy drivers/axis_config.c drivers/sx1509.c -lncurses -lwiringPi -lm handy.c
