@@ -62,6 +62,9 @@ int main(int argc, char **argv) {
 	pinMode(LIM_Z, INPUT);
 	pinMode(LIM_V, INPUT);
 	
+	//for good measure, turn off laser
+	digitalWrite(LASER_PIN, 0);
+	
 	// set up driver(s):
     	if((sx = initializeDevice()) == -1) {
         	printf("\"Fatal issue involving the driver\"\n-Princess Diana");
