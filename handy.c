@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 		printw("Handy Control System\n\n"); /* Print Header */
 		printw("Movement Speed: %d mm/min\n", speed);
 		printw("Recieved key: %c\n\n", c);
-		printw("Key command reference:\ne - set speed\nq - quit\n\nw - X motor UP\ns - X motor DOWN\nd - Y motor UP\na - Y motor DOWN\n\nr - Z motor UP\nf - Z motor DOWN\nt - V motor UP\ng - V motor DOWN\n\nZ - W axis minimum limit\nX - W axis maximum limit\n\nl - fire laser (pew pew!)");
+		printw("Key command reference:\ne - set speed\nq - quit\n\nw - X motor UP\ns - X motor DOWN\nd - Y motor UP\na - Y motor DOWN\n\nr - Z motor UP\nf - Z motor DOWN\nt - V motor UP\ng - V motor DOWN\n\nZ - W axis minimum limit\nX - W axis maximum limit\n\nl - fire laser (pew pew!)\n\np - Initiate auto destruct");
 		refresh(); /* Print it on to the real screen */
 		c = getch(); /* Wait for user input */
 		switch(c) {
@@ -173,6 +173,11 @@ int main(int argc, char **argv) {
 				digitalWrite(LASER_PIN, 1);
 				nanosleep(&ldelay,NULL);
 				digitalWrite(LASER_PIN, 0);
+				LEDColor(sx, 0, 255, 0, 0);	//turn LEDs back to red
+				LEDColor(sx, 1, 255, 0, 0);
+				break;
+			case 'p':
+				rave(sx, 200, 70);
 				LEDColor(sx, 0, 255, 0, 0);	//turn LEDs back to red
 				LEDColor(sx, 1, 255, 0, 0);
 				break;
