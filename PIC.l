@@ -39,6 +39,20 @@
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_MAX (double)250.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
+#define LIM_TRIGGER 0 /* Limit switch sensor trigger state */
+#define LOCKOUT_NULL 0
+#define LOCKOUT_NEG  1
+#define LOCKOUT_POS  2
+#define DIR_NEG 0
+#define DIR_POS 1
+
+typedef struct
+{
+	int x;
+	int y;
+	int z;
+	int v;
+} lockout_t;
 
 // globals (don't hate):
 FILE *fcomp; // compiled output (/tmp file)
@@ -65,6 +79,7 @@ int dline = 0;
 char x_ready = 0;
 char y_ready = 0;
 pthread_t lim_thread;
+lockout_t lockouts;
 
 %}
 
@@ -190,15 +205,16 @@ int sanity(int argc, char **argv) {
     }
     
     // set up watchdog thread (limit switch detection)
+    lockouts.x = lockouts.y = lockouts.z = lockouts.v = LOCKOUT_NULL;
     int rc = pthread_create(&lim_thread, NULL, lim_watchdog, (void *)NULL);
-    if (rc){
+    if (rc) {
         eprintf("Could not allocate a thread for the Y-axis.\nProposed resolution: swallow cyanide.");
         pthread_exit(NULL);
     }
 }
 
 /*
- * Watch over limit switches and yank the plug if one trips
+ * Watch over limit switches and lock out an axis direction if tripped
  */
 void *lim_watchdog(void* ignored) {
     struct timespec watchdelay;
@@ -206,7 +222,13 @@ void *lim_watchdog(void* ignored) {
     
     while(1) {
         nanosleep(&watchdelay,NULL);
-        if(digitalRead(LIM_X) != 1 || digitalRead(LIM_Y) != 1) {
+        if(digitalRead(LIM_X) == LIM_TRIGGER || digitalRead(LIM_Y) == LIM_TRIGGER) {
+	    if(digitalRead(LIM_X) == LIM_TRIGGER) {
+		lockouts.x = LOCKOUT_NEG;
+	    }
+	    else if(digitalRead(LIM_Y) == LIM_TRIGGER) {
+		lockouts.y = LOCKOUT_NEG;		
+	    }
             eprintf("LIMIT SWITCH DEPRESSED; SYSTEM SHUTTING DOWN COMMIT SEPUKKU NOW!!!");
             exit(1);
             pthread_exit(NULL);
@@ -243,7 +265,7 @@ void printDebug(const char *fmt, const int line, const char *file, ...) {
  * Error function (called regardless of DEBUG flag to let user know they fucked up)
  */
 void eprintf(const char *fmt, ...) {
- 	va_list list;
+    va_list list;
     va_start(list, fmt);
     char *prefix = "ERROR: ";
     
@@ -350,16 +372,16 @@ void axis_updated() {
     
     // directional pins
     if(dx >= 0.0) {
-        digitalWrite(X_DIR_PIN, 1);
+	set_dir(X_PIN, DIR_POS);
     }
     else {
-        digitalWrite(X_DIR_PIN, 0);
+	set_dir(X_PIN, DIR_NEG);
     }
     if(dy >= 0.0) {
-        digitalWrite(Y_DIR_PIN, 1);
+	set_dir(Y_PIN, DIR_POS);
     }
     else {
-        digitalWrite(Y_DIR_PIN, 0);
+	set_dir(Y_PIN, DIR_NEG);
     }
 
     // Z Axis
@@ -425,6 +447,53 @@ void axis_updated() {
     DEBUG("No Mr. Bond, I expect you to (NOT) die!");
     l_power = 0.0;
     laser(l_power); // last one out, get the lights
+}
+
+#pragma line 452
+/*
+ * Sets the direction of an axis, adhering to the limit switch lockouts
+ */
+void set_dir(int axis, int dir) {
+	switch(axis) {
+		case X_PIN:
+			if(lockouts.x != (dir + 1)) { 
+				digitalWrite(X_DIR_PIN, dir);
+				if(lockouts.x != LOCKOUT_NULL) { 
+					lockouts.x = LOCKOUT_NULL;
+				}
+			}
+			break;
+		case Y_PIN:
+			if(lockouts.y != (dir + 1)) { 
+				digitalWrite(Y_DIR_PIN, dir);
+				if(lockouts.y != LOCKOUT_NULL) {
+					lockouts.y = LOCKOUT_NULL;
+				}
+			}
+			break;
+		case Z_PIN:
+			if(lockouts.z != (dir + 1)) { 
+				digitalWrite(Z_DIR_PIN, dir);
+				if(lockouts.z != LOCKOUT_NULL) {
+					lockouts.z = LOCKOUT_NULL;
+				}
+			}
+			break;
+		case V_PIN:
+			if(lockouts.v != (dir + 1)) { 
+				digitalWrite(V_DIR_PIN, dir);
+				if(lockouts.v != LOCKOUT_NULL) {
+					lockouts.v = LOCKOUT_NULL;
+				}
+			}
+			break;
+		case LASER_PIN:
+			eprintf("I've got a mouse and he hasn't got a house\nI don't know why I call him Gerald.\nHe's getting rather old, but he's a good mouse.");
+			break;
+		default:
+			eprintf("Operator chromosome limit exceeded\nTrying to set a direction for axis '%d'\n\nDumbass.", axis);
+			break;
+	}	
 }
 
 /*

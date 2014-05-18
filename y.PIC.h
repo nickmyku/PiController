@@ -40,6 +40,9 @@ void eprintf(const char *fmt, ...);
 // called by lexer when axes updated
 void axis_updated();
 
+// set axis direction
+void set_dir(int axis, int dir);
+
 // runs the laser at power level
 int laser(double power);
 
