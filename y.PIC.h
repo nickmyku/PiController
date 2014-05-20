@@ -58,6 +58,9 @@ int move(int axis, int steps);
 // same as move() but for microstepping
 int micromove(int axis, int microsteps);
 
+//add layer of powder
+int addLayer(int device_add, int fwd_speed, int rev_speed);
+
 // last thing this program does - turn off pins, free memory, close files/sync
 void cleanup();
 

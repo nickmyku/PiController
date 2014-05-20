@@ -39,7 +39,8 @@
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_MAX (double)250.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
-
+#define DEPOSITION_SPEED 175 /* speed which the wiper spreads the powder  (from 0 to 255) */
+#define RETRACTION_SPEED 175 /* speed which the wiper moves back to its home position (from 0 to 255) */
 
 typedef struct
 {
@@ -105,8 +106,8 @@ sign "-"
 <INITIAL>{misc}"0"?"3"{whitespace}*{newline}+{misc}"0"?"5" ;
 <INITIAL>{misc}"0"?"3" {/* M[0]3 */}
 <INITIAL>{misc}"0"?"5" {/* M[0]5 */}
-<INITIAL>{misc}"1""0" {/* M10 */moveToLimit(sx, false, 200, true);}
-<INITIAL>{misc}"1""1" {/* M11 */moveToLimit(sx, true, 200, true);}
+<INITIAL>{misc}"1""0" {/* M10 */addLayer(sx, DEPOSITION_SPEED, RETRACTION_SPEED);}
+<INITIAL>{misc}"1""1" {/* M11 *//*moveToLimit(sx, true, 200, true);*/}
 <INITIAL>{misc}"0"?"2" {/* M[0]2 */yyterminate();}
 
 <MOVEMENT>{xaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 X#.# */yyless(1);BEGIN X;}
@@ -562,6 +563,63 @@ int laser(double power) {
 	}
 	
 	return 0;
+}
+
+int addLayer(int device_addr, int fwd_speed, int rev_speed) {
+	double step_count = 0;
+	struct timespec step_delay;
+	double temp_time;
+    	double nano_time;
+    	int i;
+    
+    	temp_time = 1/((V_MAX*x_steps_per_mm)/60000);	//calculate ms time delay from velocity
+    	nano_time = ((temp_time*1000000)/2);		//convert to ns and divide by 2
+       	step_delay.tv_nsec = (long)nano_time;
+	
+	//check that W axis is at neagtive limit
+	if(!readWLimit(device_addr, 0)){
+		DEBUG("wiper not at negative limit, cannot move x axis to limit\n"); 
+		return -11;
+	}
+	
+	//set x axis direction to positive
+	set_dir(X_DIR_PIN, DIR_POS);
+	
+	//if x is not at postive limit then move it there
+	while(lockouts.x != LOCKOUT_POS) {
+		digitalWrite(X_PIN, 1);
+            	nanosleep(&step_delay,NULL);
+            	digitalWrite(X_PIN, 0);
+            	nanosleep(&step_delay,NULL);
+		step_count++;
+	}
+	
+	//move wiper to positive limit
+	moveToLimit(device_addr, 1, fwd_speed, 1);
+	
+	sleep(1);
+	
+	//move wiper to negative limit
+	moveToLimit(device_addr, 0, rev_speed, 1);
+	
+	//check that W axis is at negative limit
+	if(!readWLimit(device_addr, 0)) {
+		DEBUG("wiper is not at negative limit, cannot move x axis back to orginal position\n");
+		return -12;
+	}
+	
+	//set x axis direction to negative
+	set_dir(X_DIR_PIN, DIR_NEG);
+	
+	//return x axis to previous postion
+	for(i = 0; i<step_count; i++) {
+		digitalWrite(X_PIN, 1);
+            	nanosleep(&step_delay,NULL);
+            	digitalWrite(X_PIN, 0);
+            	nanosleep(&step_delay,NULL);
+        }
+        
+        return 0;
 }
 
 /*
