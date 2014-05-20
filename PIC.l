@@ -187,6 +187,7 @@ int sanity(int argc, char **argv) {
     pinMode(LIM_X, INPUT);
     pinMode(LIM_Y, INPUT);
     pinMode(LIM_Z, INPUT);
+    pinMode(LIM_V, INPUT);
     
     // set up axis and motor parameters
     x_steps_per_mm = stepsPerMM('x'); 	
@@ -321,12 +322,15 @@ void eprintf(const char *fmt, ...) {
 struct timespec constdelay;
 struct timespec xdelay;
 struct timespec ydelay;
+struct timespec zdelay;
+struct timespec vdelay;
 double y_writes;
 double x_writes;
 double steps_x;
 double steps_y;
 double steps_z;
 double steps_v;
+
 void *simul_y(void *targv) {
     double i;
     int *argv = (int *)targv;
@@ -357,8 +361,12 @@ void axis_updated() {
     double y_vel;
     double temp_x_time;
     double temp_y_time;
+    double temp_z_time;
+    double temp_v_time;
     double nano_x_time;
     double nano_y_time;
+    double nano_z_time;
+    double nano_v_time;
     double i;
 
     DEBUG("Turning laser %s", (l_power > 0.0)?("on"):("off"));
@@ -382,7 +390,7 @@ void axis_updated() {
     steps_z = stepsPerMM('Z') * dz;
     steps_v = stepsPerMM('V') * dv;
     
-    DEBUG("dX: %f, dY: %f, dZ: %f, dV: %f",dx,dy,dz,dv);
+    DEBUG("\ndX: %f, dY: %f, dZ: %f, dV: %f",dx,dy,dz,dv);
 
     if((dx != 0) && (dy != 0))
     {
@@ -398,12 +406,20 @@ void axis_updated() {
     
     temp_x_time = 1/((x_vel*x_steps_per_mm)/60000);	//calculate ms delay for x step
     temp_y_time = 1/((y_vel*y_steps_per_mm)/60000);	//calculate ms delay for y step
+    temp_z_time = 1/((V_MAX*z_steps_per_mm)/60000);	//calculate ms delay for z step
+    temp_v_time = 1/((V_MAX*v_steps_per_mm)/60000);	//calculate ms delay for v step
+    
     
     nano_x_time = ((temp_x_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
     nano_y_time = ((temp_y_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    nano_z_time = ((temp_z_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    nano_v_time = ((temp_v_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    
     
     xdelay.tv_nsec = (long)nano_x_time;
     ydelay.tv_nsec = (long)nano_y_time;
+    zdelay.tv_nsec = (long)nano_z_time;
+    vdelay.tv_nsec = (long)nano_v_time;
     constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
         
     DEBUG("\nX %f steps at %f mm/s (d. %ld)\nY %f steps at %f mm/s (d. %ld)", steps_x, x_vel,xdelay.tv_nsec,steps_y,y_vel,ydelay.tv_nsec);
@@ -421,31 +437,39 @@ void axis_updated() {
     else {
 	set_dir(Y_DIR_PIN, DIR_NEG);
     }
+    if(dz >= 0.0) {
+	set_dir(Z_DIR_PIN, DIR_POS);
+    }
+    else {
+	set_dir(Z_DIR_PIN, DIR_NEG);
+    }
+    if(dv >= 0.0) {
+	set_dir(V_DIR_PIN, DIR_POS);
+    }
+    else {
+	set_dir(V_DIR_PIN, DIR_NEG);
+    }
 
     //WILL NEED TO FIND MORE INTELLIGENT WAY TO PREVENT MOTOR FROM MOVING 
     //IN THE LOCKOUT DIRECTION, FOR NOW IT WILL JUST STOP MOVING IN EITHER DIRECTION
 
     // Z Axis
     if(steps_z != 0.0 && lockouts.z == LOCKOUT_NULL) {
-	if(dz >= 0.0) digitalWrite(Z_DIR_PIN, 1);
-	else digitalWrite(Z_DIR_PIN, 0);
 	for(i = 0.0; i <= fabs(steps_z); i++) {
 	    digitalWrite(Z_PIN, 1);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&zdelay,NULL);
             digitalWrite(Z_PIN, 0);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&zdelay,NULL);
 	}
     }
 
     // V Axis 
     if(steps_v != 0.0 && lockouts.v == LOCKOUT_NULL) {
-	if(dv >= 0.0) digitalWrite(V_DIR_PIN, 1);
-	else digitalWrite(V_DIR_PIN, 0);
 	for(i = 0.0; i <= fabs(steps_v); i++) {
 	    digitalWrite(V_PIN, 1);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&vdelay,NULL);
             digitalWrite(V_PIN, 0);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&vdelay,NULL);
 	}
     }
     
@@ -578,10 +602,11 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
 	
 	//check that W axis is at neagtive limit
 	if(!readWLimit(device_addr, 0)){
-		DEBUG("wiper not at negative limit, cannot move x axis to limit\n"); 
+		DEBUG("\nwiper not at negative limit, cannot move x axis to limit"); 
 		return -11;
 	}
 	
+	DEBUG("\nmoving x axis to positive limit, out of the path of the wiper");
 	//set x axis direction to positive
 	set_dir(X_DIR_PIN, DIR_POS);
 	
@@ -597,6 +622,7 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
 	//move wiper to positive limit
 	moveToLimit(device_addr, 1, fwd_speed, 1);
 	
+	//freaks out when there isnt a delay
 	sleep(1);
 	
 	//move wiper to negative limit
@@ -604,7 +630,7 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
 	
 	//check that W axis is at negative limit
 	if(!readWLimit(device_addr, 0)) {
-		DEBUG("wiper is not at negative limit, cannot move x axis back to orginal position\n");
+		DEBUG("\nwiper is not at negative limit, cannot move x axis back to orginal position");
 		return -12;
 	}
 	
@@ -618,6 +644,8 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
             	digitalWrite(X_PIN, 0);
             	nanosleep(&step_delay,NULL);
         }
+        
+        DEBUG("\nx axis has been moved back to its original position");
         
         return 0;
 }
