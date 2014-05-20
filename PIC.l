@@ -374,6 +374,8 @@ void axis_updated() {
     
     DEBUG("\nFrom: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
     
+    //this math breaks when a gcode line does not have x,y,z,v cordinates on it every time
+    //it resets the axis postion to 0 and makes the machine move randomly and confusingly -NM
     dx = pos_x - last_pos_x;
     dy = pos_y - last_pos_y;
     dz = pos_z - last_pos_z;
