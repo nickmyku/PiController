@@ -14,7 +14,6 @@ int motorMove(int device, bool dir, int speed);
 int motorStop(int device, bool brake);
 int moveToLimit(int device, bool dir, int speed, bool brake);
 bool readWLimit(int device, int switchNum);
-
 void rave(int device, int cycles, int delayMS);
 
 int initializeDevice();
@@ -118,6 +117,10 @@ int moveToLimit(int device, bool dir, int speed, bool brake);
 		but the w axis is already at the negative limit
 
 		returns -3 if function times out before limit switch is reached
+		
+		returns -4 if motor move command could not execute (because
+		x axis was not at the positive limti)
+		
 
 	device designates the address of the sx1509
 	the address is the output of the initialization function
@@ -143,7 +146,9 @@ int motorMove(int device, bool dir, int speed);
 	function moves motor in a given direction
 	(this is a "dumb" movement which will not hault if a limit switch is depressed
 	
-		returns 0 in all situations
+		returns 1 if motor could not be moved (x axis was not at positive limit)
+		
+		returns 0 in all other situations
 	
 	device designates the address of the sx1509
 	the address is the output of the initialization function

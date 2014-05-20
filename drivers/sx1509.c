@@ -13,6 +13,7 @@
 #include <time.h>
 
 #include "../y.PIC.h" // DEBUG()
+#include "../slave/commands.h"
 
 // wiringPi included by PIC.l
 
@@ -429,6 +430,13 @@ int motorMove(int device, bool dir, int speed)
 	reg_data_a = readReg (device, REGDATAA);
 	intToBits(bits, reg_data_a);
 	
+	//check to make sure the x and y axis gantry is out of the way
+	//unfortunately it is not smart enough to know if it is the neg or pos limit
+	if(digitalRead(LIM_X) != LIM_TRIGGER)
+	{
+		return 1;
+	}
+	
 	//positive
 	if(!dir)
 	{	
@@ -520,8 +528,11 @@ int moveToLimit(int device, bool dir, int speed, bool brake)
 		return -2;
 	}
 	
-	//if limit is not reached begin movement
-	motorMove(device, dir, speed);
+	//if limit is not already reached begin movement
+	if(motorMove(device, dir, speed) != 0)
+	{
+		return -4;
+	}
 	
 	//loop which continuosly checks limit switches until it detects a change or times out
 	if(dir)
