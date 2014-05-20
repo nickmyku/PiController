@@ -26,6 +26,20 @@
 #define V_MAX (double)250.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define pthread_yield_np() pthread_yield(NULL)
+#define LIM_TRIGGER 0 /* Limit switch sensor trigger state */
+#define LOCKOUT_NULL 0
+#define LOCKOUT_NEG  1
+#define LOCKOUT_POS  2
+#define DIR_NEG 0
+#define DIR_POS 1
+
+typedef struct
+{
+	int x;
+	int y;
+	int z;
+	int v;
+} lockout_t;
 
 // globals:
 double steps_per_mm_x;
@@ -33,13 +47,14 @@ double steps_per_mm_y;
 double steps_per_mm_z;
 double steps_per_mm_v;
 pthread_t lim_thread;
+lockout_t lockouts;
 
 // SX1509 Driver:
 int sx = -1;
 
 int main(int argc, char **argv) {
 	char c = ' ';
-	int speed = 250;
+	int speed = 500;
 	struct timespec ldelay;
 
 	if(wiringPiSetup() == -1) {
@@ -64,6 +79,12 @@ int main(int argc, char **argv) {
 	
 	//for good measure, turn off laser
 	digitalWrite(LASER_PIN, 0);
+	
+	//reset limit switch lockouts
+	lockouts.x = LOCKOUT_NULL;
+	lockouts.y = LOCKOUT_NULL;
+	lockouts.z = LOCKOUT_NULL;
+	lockouts.v = LOCKOUT_NULL;
 	
 	// set up driver(s):
     	if((sx = initializeDevice()) == -1) {
@@ -121,36 +142,60 @@ int main(int argc, char **argv) {
 				getch(); // good old DOS humor
 				noecho();
 			case 'w':						//had to change to WASD keys, played too many pc games as a kid
-				digitalWrite(X_DIR_PIN, 1);
-				move_pin(X_PIN, speed, steps_per_mm_x);
+				set_dir(X_DIR_PIN, DIR_POS);
+				//do not move if X lockout is still enabled
+				if(lockouts.x != LOCKOUT_POS)	{
+					move_pin(X_PIN, speed, steps_per_mm_x);
+				}
 				break;
 			case 's':
-				digitalWrite(X_DIR_PIN, 0);
-				move_pin(X_PIN, speed, steps_per_mm_x);
+				set_dir(X_DIR_PIN, DIR_NEG);
+				//do not move if X lockout is still enabled
+				if(lockouts.x != LOCKOUT_NEG)	{
+					move_pin(X_PIN, speed, steps_per_mm_x);
+				}
 				break;
 			case 'd':
-				digitalWrite(Y_DIR_PIN, 1);
-				move_pin(Y_PIN, speed, steps_per_mm_y);
+				set_dir(Y_DIR_PIN, DIR_POS);
+				//do not move if Y lockout is still enabled
+				if(lockouts.y != LOCKOUT_POS)	{
+					move_pin(Y_PIN, speed, steps_per_mm_y);
+				}
 				break;
 			case 'a':
-				digitalWrite(Y_DIR_PIN, 0);
-				move_pin(Y_PIN, speed, steps_per_mm_y);
+				set_dir(Y_DIR_PIN, DIR_NEG);
+				//do not move if Y lockout is still enabled
+				if(lockouts.y != LOCKOUT_NEG)	{
+					move_pin(Y_PIN, speed, steps_per_mm_y);
+				}
 				break;
 			case 'r':
-				digitalWrite(Z_DIR_PIN, 1);
-				move_pin(Z_PIN, speed, steps_per_mm_z);
+				set_dir(Z_DIR_PIN, DIR_POS);
+				//do not move if Z lockout is still enabled
+				if(lockouts.z != LOCKOUT_POS)	{
+					move_pin(Z_PIN, speed, steps_per_mm_z);
+				}
 				break;
 			case 'f':
-				digitalWrite(Z_DIR_PIN, 0);
-				move_pin(Z_PIN, speed, steps_per_mm_z);
+				set_dir(Z_DIR_PIN, DIR_NEG);
+				//do not move if Z lockout is still enabled
+				if(lockouts.z != LOCKOUT_NEG)	{
+					move_pin(Z_PIN, speed, steps_per_mm_z);
+				}
 				break;
 			case 't':
-				digitalWrite(V_DIR_PIN, 1);
-				move_pin(V_PIN, speed, steps_per_mm_v);
+				set_dir(V_DIR_PIN, DIR_POS);
+				//do not move if V lockout is still enabled
+				if(lockouts.v != LOCKOUT_POS)	{
+					move_pin(V_PIN, speed, steps_per_mm_v);
+				}
 				break;
 			case 'g':
-				digitalWrite(V_DIR_PIN, 0);
-				move_pin(V_PIN, speed, steps_per_mm_v);
+				set_dir(V_DIR_PIN, DIR_NEG);
+				//do not move if V lockout is still enabled
+				if(lockouts.v != LOCKOUT_NEG)	{
+					move_pin(V_PIN, speed, steps_per_mm_v);
+				}
 				break;
 			case 'z':
 				LEDColor(sx, 0, 255, 255, 0);	//turn LEDs yellow
@@ -222,22 +267,114 @@ void move_pin(int pin, int speed, double steps_per_mm) {
 }
 
 /*
- * Watch over limit switches and yank the plug if one trips
+ * Watch over limit switches and lock out an axis direction if tripped
  */
 void *lim_watchdog(void* ignored) {
     struct timespec watchdelay;
-    watchdelay.tv_nsec = 50000; // tweak as needed
+    watchdelay.tv_nsec = 50000000; // tweak as needed
     
     while(1) {
         nanosleep(&watchdelay,NULL);
-        if(digitalRead(LIM_X) != 1 || digitalRead(LIM_Y) != 1) {
-	    endwin(); // remove this if you're brave and/or stupid
-            printf("LIMIT SWITCH DEPRESSED; SYSTEM SHUTTING DOWN COMMIT SEPUKKU NOW!!!");
-            exit(1);
-            pthread_exit(NULL);
-        }
+        
+	    //check if X lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_X) == LIM_TRIGGER && lockouts.x == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(X_DIR_PIN) == DIR_NEG) {
+		   lockouts.x = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout
+		if(digitalRead(X_DIR_PIN) == DIR_POS) {
+		   lockouts.x = LOCKOUT_POS;
+		}
+	    }
+	    //check if Y lim is triggered and that the locout has not already been set
+	    if(digitalRead(LIM_Y) == LIM_TRIGGER && lockouts.y == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(Y_DIR_PIN) == DIR_NEG) {
+		   lockouts.y = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(Y_DIR_PIN) == DIR_POS) {
+		   lockouts.y = LOCKOUT_POS;
+		}		
+	    }
+	    //check if Z lim is triggered and that the locout has not already been set
+	    if(digitalRead(LIM_Z) == LIM_TRIGGER && lockouts.z == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(Z_DIR_PIN) == DIR_NEG) {
+		   lockouts.z = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(Z_DIR_PIN) == DIR_POS) {
+		   lockouts.z = LOCKOUT_POS;
+		}		
+	    }
+	    //check if V lim is triggered and that the locout has not already been set
+	    if(digitalRead(LIM_V) == LIM_TRIGGER && lockouts.v == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(V_DIR_PIN) == DIR_NEG) {
+		   lockouts.v = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(V_DIR_PIN) == DIR_POS) {
+		   lockouts.v = LOCKOUT_POS;
+		}		
+	    }
+            
+        
         pthread_yield_np();
     }
+}
+
+
+/*
+ * Sets the direction of an axis, adhering to the limit switch lockouts
+ */
+void set_dir(int axis, int dir) {
+	switch(axis) {
+		case X_DIR_PIN:
+			if(lockouts.x != (dir + 1)) { 
+				digitalWrite(X_DIR_PIN, dir);
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.x != LOCKOUT_NULL && digitalRead(LIM_X) != LIM_TRIGGER) { 
+					lockouts.x = LOCKOUT_NULL;
+				}
+			}
+			break;
+		case Y_DIR_PIN:
+			if(lockouts.y != (dir + 1)) { 
+				digitalWrite(Y_DIR_PIN, dir);
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.y != LOCKOUT_NULL && digitalRead(LIM_Y) != LIM_TRIGGER) {
+					lockouts.y = LOCKOUT_NULL;
+				}
+			}
+			break;
+		case Z_DIR_PIN:
+			if(lockouts.z != (dir + 1)) { 
+				digitalWrite(Z_DIR_PIN, dir);
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.z != LOCKOUT_NULL && digitalRead(LIM_Z) != LIM_TRIGGER) {
+					lockouts.z = LOCKOUT_NULL;
+				}
+			}
+			break;
+		case V_DIR_PIN:
+			if(lockouts.v != (dir + 1)) { 
+				digitalWrite(V_DIR_PIN, dir);
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.v != LOCKOUT_NULL && digitalRead(LIM_V) != LIM_TRIGGER) {
+					lockouts.v = LOCKOUT_NULL;
+				}
+			}
+			break;
+		case LASER_PIN:
+			printf("I've got a mouse and he hasn't got a house\nI don't know why I call him Gerald.\nHe's getting rather old, but he's a good mouse.");
+			break;
+		default:
+			printf("Operator chromosome limit exceeded\nTrying to set a direction for axis '%d'\n\nDumbass.", axis);
+			break;
+	}	
 }
 
 /*

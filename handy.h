@@ -9,5 +9,6 @@
 
 void move_pin(int pin, int speed, double steps_per_mm);
 void *lim_watchdog(void* ignored);
+void set_dir(int axis, int dir);
 
 #endif /* HANDY_H_ */

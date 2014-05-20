@@ -198,6 +198,12 @@ int sanity(int argc, char **argv) {
     z_steps_per_mm = stepsPerMM('z');
     v_steps_per_mm = stepsPerMM('v');
     
+    //reset lockouts
+    lockouts.x = LOCKOUT_NULL;
+    lockouts.y = LOCKOUT_NULL;
+    lockouts.z = LOCKOUT_NULL;
+    lockouts.v = LOCKOUT_NULL;
+    
     // set up driver(s):
     if((sx = initializeDevice()) == -1) {
         eprintf("\"Fatal issue involving the driver\"\n-Princess Diana");
@@ -222,17 +228,53 @@ void *lim_watchdog(void* ignored) {
     
     while(1) {
         nanosleep(&watchdelay,NULL);
-        if(digitalRead(LIM_X) == LIM_TRIGGER || digitalRead(LIM_Y) == LIM_TRIGGER) {
-	    if(digitalRead(LIM_X) == LIM_TRIGGER) {
-		lockouts.x = LOCKOUT_NEG;
+        
+	    //check if X lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_X) == LIM_TRIGGER && lockouts.x == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(X_DIR_PIN) == DIR_NEG) {
+		   lockouts.x = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout
+		if(digitalRead(X_DIR_PIN) == DIR_POS) {
+		   lockouts.x = LOCKOUT_POS;
+		}
 	    }
-	    else if(digitalRead(LIM_Y) == LIM_TRIGGER) {
-		lockouts.y = LOCKOUT_NEG;		
+	    //check if Y lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_Y) == LIM_TRIGGER && lockouts.y == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(Y_DIR_PIN) == DIR_NEG) {
+		   lockouts.y = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(Y_DIR_PIN) == DIR_POS) {
+		   lockouts.y = LOCKOUT_POS;
+		}		
 	    }
-            eprintf("LIMIT SWITCH DEPRESSED; SYSTEM SHUTTING DOWN COMMIT SEPUKKU NOW!!!");
-            exit(1);
-            pthread_exit(NULL);
-        }
+	    //check if Z lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_Z) == LIM_TRIGGER && lockouts.z == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(Z_DIR_PIN) == DIR_NEG) {
+		   lockouts.z = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(Z_DIR_PIN) == DIR_POS) {
+		   lockouts.z = LOCKOUT_POS;
+		}		
+	    }
+	    //check if V lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_V) == LIM_TRIGGER && lockouts.v == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(V_DIR_PIN) == DIR_NEG) {
+		   lockouts.v = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(V_DIR_PIN) == DIR_POS) {
+		   lockouts.v = LOCKOUT_POS;
+		}		
+	    }
+            
+        
         pthread_yield_np();
     }
 }
@@ -372,20 +414,23 @@ void axis_updated() {
     
     // directional pins
     if(dx >= 0.0) {
-	set_dir(X_PIN, DIR_POS);
+	set_dir(X_DIR_PIN, DIR_POS);
     }
     else {
-	set_dir(X_PIN, DIR_NEG);
+	set_dir(X_DIR_PIN, DIR_NEG);
     }
     if(dy >= 0.0) {
-	set_dir(Y_PIN, DIR_POS);
+	set_dir(Y_DIR_PIN, DIR_POS);
     }
     else {
-	set_dir(Y_PIN, DIR_NEG);
+	set_dir(Y_DIR_PIN, DIR_NEG);
     }
 
+    //WILL NEED TO FIND MORE INTELLIGENT WAY TO PREVENT MOTOR FROM MOVING 
+    //IN THE LOCKOUT DIRECTION, FOR NOW IT WILL JUST STOP MOVING IN EITHER DIRECTION
+
     // Z Axis
-    if(steps_z != 0.0) {
+    if(steps_z != 0.0 && lockouts.z == LOCKOUT_NULL) {
 	if(dz >= 0.0) digitalWrite(Z_DIR_PIN, 1);
 	else digitalWrite(Z_DIR_PIN, 0);
 	for(i = 0.0; i <= fabs(steps_z); i++) {
@@ -397,7 +442,7 @@ void axis_updated() {
     }
 
     // V Axis 
-    if(steps_v != 0.0) {
+    if(steps_v != 0.0 && lockouts.v == LOCKOUT_NULL) {
 	if(dv >= 0.0) digitalWrite(V_DIR_PIN, 1);
 	else digitalWrite(V_DIR_PIN, 0);
 	for(i = 0.0; i <= fabs(steps_v); i++) {
@@ -409,7 +454,7 @@ void axis_updated() {
     }
     
     // Y Axis (threaded and gluten-free!)
-    if(steps_y != 0.0) {
+    if(steps_y != 0.0 && lockouts.y == LOCKOUT_NULL) {
         pthread_t y_thread;
         int rc;
         int argv[2];
@@ -424,7 +469,7 @@ void axis_updated() {
     }
     
     // X Axis
-    if(steps_x != 0.0) {
+    if(steps_x != 0.0 && lockouts.x == LOCKOUT_NULL) {
         for(i = 0.0; i <= fabs(steps_x); i++) {
             digitalWrite(X_PIN, 1);
             nanosleep(&xdelay,NULL);
@@ -455,34 +500,38 @@ void axis_updated() {
  */
 void set_dir(int axis, int dir) {
 	switch(axis) {
-		case X_PIN:
+		case X_DIR_PIN:
 			if(lockouts.x != (dir + 1)) { 
 				digitalWrite(X_DIR_PIN, dir);
-				if(lockouts.x != LOCKOUT_NULL) { 
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.x != LOCKOUT_NULL && digitalRead(LIM_X) != LIM_TRIGGER) { 
 					lockouts.x = LOCKOUT_NULL;
 				}
 			}
 			break;
-		case Y_PIN:
+		case Y_DIR_PIN:
 			if(lockouts.y != (dir + 1)) { 
 				digitalWrite(Y_DIR_PIN, dir);
-				if(lockouts.y != LOCKOUT_NULL) {
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.y != LOCKOUT_NULL && digitalRead(LIM_Y) != LIM_TRIGGER) {
 					lockouts.y = LOCKOUT_NULL;
 				}
 			}
 			break;
-		case Z_PIN:
+		case Z_DIR_PIN:
 			if(lockouts.z != (dir + 1)) { 
 				digitalWrite(Z_DIR_PIN, dir);
-				if(lockouts.z != LOCKOUT_NULL) {
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.z != LOCKOUT_NULL && digitalRead(LIM_Z) != LIM_TRIGGER) {
 					lockouts.z = LOCKOUT_NULL;
 				}
 			}
 			break;
-		case V_PIN:
+		case V_DIR_PIN:
 			if(lockouts.v != (dir + 1)) { 
 				digitalWrite(V_DIR_PIN, dir);
-				if(lockouts.v != LOCKOUT_NULL) {
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.v != LOCKOUT_NULL && digitalRead(LIM_V) != LIM_TRIGGER) {
 					lockouts.v = LOCKOUT_NULL;
 				}
 			}
