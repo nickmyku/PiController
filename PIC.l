@@ -39,12 +39,7 @@
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_MAX (double)250.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
-#define LIM_TRIGGER 0 /* Limit switch sensor trigger state */
-#define LOCKOUT_NULL 0
-#define LOCKOUT_NEG  1
-#define LOCKOUT_POS  2
-#define DIR_NEG 0
-#define DIR_POS 1
+
 
 typedef struct
 {

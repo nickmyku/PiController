@@ -13,19 +13,34 @@
  */
 #define SLAVE_BUS_ID 0x04
 #define MASTER_BUS_ID 0x03
+
+//Stepper Motor Control Pins
 #define X_PIN 0
 #define Y_PIN 2
 #define Z_PIN 4
 #define V_PIN 6
-#define LASER_PIN 1
 #define X_DIR_PIN 10
 #define Y_DIR_PIN 3
 #define Z_DIR_PIN 5
 #define V_DIR_PIN 11
+//Stepper Motor Related
+#define DIR_NEG 0
+#define DIR_POS 1
+
+//Laser Control Pins
+#define LASER_PIN 1
+
+//Limit Switch Pins
 #define LIM_X 17
 #define LIM_Y 18
 #define LIM_Z 19
 #define LIM_V 20
+//Limit Switch Related
+#define LIM_TRIGGER 0 /* Limit switch sensor trigger state */
+#define LOCKOUT_NULL 0
+#define LOCKOUT_NEG  1
+#define LOCKOUT_POS  2
+
 
 /*
  * ***** COMMANDS *****
