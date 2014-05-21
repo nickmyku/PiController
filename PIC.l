@@ -372,10 +372,8 @@ void axis_updated() {
     DEBUG("Turning laser %s", (l_power > 0.0)?("on"):("off"));
     laser(l_power);
     
-    DEBUG("\nFrom: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
+    DEBUG("\nFrom: <%f,%f,%f,%f> to <%f,%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, last_pos_v, pos_x, pos_y, pos_z, pos_v);
     
-    //this math breaks when a gcode line does not have x,y,z,v cordinates on it every time
-    //it resets the axis postion to 0 and makes the machine move randomly and confusingly -NM
     dx = pos_x - last_pos_x;
     dy = pos_y - last_pos_y;
     dz = pos_z - last_pos_z;
@@ -384,7 +382,7 @@ void axis_updated() {
     last_pos_y = pos_y;
     last_pos_z = pos_z;
     last_pos_v = pos_v;
-    pos_x = pos_y = pos_z = pos_v = 0.0; // changed from -1.0 by AC@5/11/14
+    //pos_x = pos_y = pos_z = pos_v = 0.0; // removed this reset 5/20/14 -NM was casuing axis to reset if it was not moved on a given line of gcode
     x_writes = y_writes = 0.0;
     
     steps_x = dx*x_steps_per_mm;
