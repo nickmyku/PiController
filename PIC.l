@@ -38,9 +38,10 @@
 
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_MAX (double)250.0 /* mm/min */
+#define V_SCREW_MAX (double)50.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
-#define DEPOSITION_SPEED 175 /* speed which the wiper spreads the powder  (from 0 to 255) */
-#define RETRACTION_SPEED 175 /* speed which the wiper moves back to its home position (from 0 to 255) */
+#define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
+#define RETRACTION_SPEED 255 /* speed which the wiper moves back to its home position (from 0 to 255) */
 
 typedef struct
 {
@@ -406,8 +407,8 @@ void axis_updated() {
     
     temp_x_time = 1/((x_vel*x_steps_per_mm)/60000);	//calculate ms delay for x step
     temp_y_time = 1/((y_vel*y_steps_per_mm)/60000);	//calculate ms delay for y step
-    temp_z_time = 1/((V_MAX*z_steps_per_mm)/60000);	//calculate ms delay for z step
-    temp_v_time = 1/((V_MAX*v_steps_per_mm)/60000);	//calculate ms delay for v step
+    temp_z_time = 1/((V_SCREW_MAX*z_steps_per_mm)/60000);	//calculate ms delay for z step
+    temp_v_time = 1/((V_SCREW_MAX*v_steps_per_mm)/60000);	//calculate ms delay for v step
     
     
     nano_x_time = ((temp_x_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
