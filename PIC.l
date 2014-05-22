@@ -37,7 +37,7 @@
 #endif
 
 #define COMPILED_FILE "/tmp/PIC.o"
-#define V_MAX (double)250.0 /* mm/min */
+#define V_MAX (double)50.0 /* mm/min */
 #define V_SCREW_MAX (double)50.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
@@ -370,8 +370,7 @@ void axis_updated() {
     double nano_v_time;
     double i;
 
-    DEBUG("Turning laser %s", (l_power > 0.0)?("on"):("off"));
-    laser(l_power);
+    
     
     DEBUG("\nFrom: <%f,%f,%f,%f> to <%f,%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, last_pos_v, pos_x, pos_y, pos_z, pos_v);
     
@@ -473,6 +472,11 @@ void axis_updated() {
             nanosleep(&vdelay,NULL);
 	}
     }
+    
+    
+    DEBUG("Turning laser %s", (l_power > 0.0)?("on"):("off"));
+    laser(l_power);
+     
     
     // Y Axis (threaded and gluten-free!)
     if(steps_y != 0.0 && lockouts.y == LOCKOUT_NULL) {
