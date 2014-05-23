@@ -37,7 +37,8 @@
 #endif
 
 #define COMPILED_FILE "/tmp/PIC.o"
-#define V_MAX (double)50.0 /* mm/min */
+#define V_BELT_MAX (double)50.0 /* mm/min */
+#define V_BELT_MAX_JOG (double)300.0 /* mm/min */
 #define V_SCREW_MAX (double)50.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
@@ -116,7 +117,7 @@ sign "-"
 <MOVEMENT>{zaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 Z#.# */yyless(1);BEGIN Z;}
 <MOVEMENT>{vaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 V#.# */yyless(1);BEGIN V;}
 <MOVEMENT>{laxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 L#.# */yyless(1);BEGIN L;}
-<MOVEMENT>{newline} {/* EOL of G[0]1 */dline++;sleep(1);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{newline} {/* EOL of G[0]1 */dline++;DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 <MOVEMENT><<EOF>> {/* EOF during G[0]1 reading */dline++;axis_updated();DEBUG("EOF and Axis Updated (%d)", dline);yyterminate();}
 
 <X>{sign}?{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
@@ -387,21 +388,21 @@ void axis_updated() {
     
     steps_x = dx*x_steps_per_mm;
     steps_y = dy*y_steps_per_mm;
-    steps_z = stepsPerMM('Z') * dz;
-    steps_v = stepsPerMM('V') * dv;
+    steps_z = dz*z_steps_per_mm;
+    steps_v = dv*v_steps_per_mm;
     
     DEBUG("\ndX: %f, dY: %f, dZ: %f, dV: %f",dx,dy,dz,dv);
 
     if((dx != 0) && (dy != 0))
     {
-    	x_vel = sqrt((V_MAX*V_MAX)/(1+((dy*dy)/(dx*dx))));
-    	y_vel = sqrt((V_MAX*V_MAX)/(1+((dx*dx)/(dy*dy))));
+    	x_vel = sqrt((V_BELT_MAX*V_BELT_MAX)/(1+((dy*dy)/(dx*dx))));
+    	y_vel = sqrt((V_BELT_MAX*V_BELT_MAX)/(1+((dx*dx)/(dy*dy))));
         
     }
     else
     {
-    	x_vel = V_MAX;
-    	y_vel = V_MAX;
+    	x_vel = V_BELT_MAX;
+    	y_vel = V_BELT_MAX;
     }
     
     temp_x_time = 1/((x_vel*x_steps_per_mm)/60000);	//calculate ms delay for x step
@@ -422,7 +423,7 @@ void axis_updated() {
     vdelay.tv_nsec = (long)nano_v_time;
     constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
         
-    DEBUG("\nX %f steps at %f mm/s (d. %ld)\nY %f steps at %f mm/s (d. %ld)", steps_x, x_vel,xdelay.tv_nsec,steps_y,y_vel,ydelay.tv_nsec);
+    DEBUG("\nX %f steps at %f mm/min (d. %ld)\nY %f steps at %f mm/min (d. %ld)", steps_x, x_vel,xdelay.tv_nsec,steps_y,y_vel,ydelay.tv_nsec);
     
     // directional pins
     if(dx >= 0.0) {
@@ -601,7 +602,7 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
     	double nano_time;
     	int i;
     
-    	temp_time = 1/((V_MAX*x_steps_per_mm)/60000);	//calculate ms time delay from velocity
+    	temp_time = 1/((V_BELT_MAX_JOG*x_steps_per_mm)/60000);	//calculate ms time delay from velocity
     	nano_time = ((temp_time*1000000)/2);		//convert to ns and divide by 2
        	step_delay.tv_nsec = (long)nano_time;
 	
