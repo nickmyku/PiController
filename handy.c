@@ -49,7 +49,7 @@ int sx = -1;
 int main(int argc, char **argv) {
 	char c = ' ';
 	int speed = 500;
-	struct timespec ldelay;
+	struct timespec laserdelay;
 
 	if(wiringPiSetup() == -1) {
 		printf("Pin setup failed!\n(Do you even root, bro?)\n");
@@ -208,9 +208,9 @@ int main(int argc, char **argv) {
 			case 'l':
 				LEDColor(sx, 0, 0, 0, 255);	//turn LEDs blue
 				LEDColor(sx, 1, 0, 0, 255);
-    				ldelay.tv_nsec = 500; // tweak as needed
+    				laserdelay.tv_nsec = (long)5000; // tweak as needed
 				digitalWrite(LASER_PIN, 1);
-				nanosleep(&ldelay,NULL);
+				nanosleep(&laserdelay,NULL);
 				digitalWrite(LASER_PIN, 0);
 				LEDColor(sx, 0, 255, 0, 0);	//turn LEDs back to red
 				LEDColor(sx, 1, 255, 0, 0);
