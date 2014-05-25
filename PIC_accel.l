@@ -37,14 +37,12 @@
 #endif
 
 #define COMPILED_FILE "/tmp/PIC.o"
-#define V_MAX (double)250.0 /* mm/min */
+#define V_BELT_MAX (double)500.0 /* mm/min */
+#define V_BELT_MAX_JOG (double)300.0 /* mm/min */
+#define V_SCREW_MAX (double)50.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
-#define LIM_TRIGGER 0 /* Limit switch sensor trigger state */
-#define LOCKOUT_NULL 0
-#define LOCKOUT_NEG  1
-#define LOCKOUT_POS  2
-#define DIR_NEG 0
-#define DIR_POS 1
+#define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
+#define RETRACTION_SPEED 255 /* speed which the wiper moves back to its home position (from 0 to 255) */
 
 typedef struct
 {
@@ -110,8 +108,8 @@ sign "-"
 <INITIAL>{misc}"0"?"3"{whitespace}*{newline}+{misc}"0"?"5" ;
 <INITIAL>{misc}"0"?"3" {/* M[0]3 */}
 <INITIAL>{misc}"0"?"5" {/* M[0]5 */}
-<INITIAL>{misc}"1""0" {/* M10 */moveToLimit(sx, false, 200, true);}
-<INITIAL>{misc}"1""1" {/* M11 */moveToLimit(sx, true, 200, true);}
+<INITIAL>{misc}"1""0" {/* M10 */addLayer(sx, DEPOSITION_SPEED, RETRACTION_SPEED);}
+<INITIAL>{misc}"1""1" {/* M11 *//*moveToLimit(sx, true, 200, true);*/}
 <INITIAL>{misc}"0"?"2" {/* M[0]2 */yyterminate();}
 
 <MOVEMENT>{xaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 X#.# */yyless(1);BEGIN X;}
@@ -119,7 +117,7 @@ sign "-"
 <MOVEMENT>{zaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 Z#.# */yyless(1);BEGIN Z;}
 <MOVEMENT>{vaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 V#.# */yyless(1);BEGIN V;}
 <MOVEMENT>{laxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 L#.# */yyless(1);BEGIN L;}
-<MOVEMENT>{newline} {/* EOL of G[0]1 */dline++;sleep(1);DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{newline} {/* EOL of G[0]1 */dline++;DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
 <MOVEMENT><<EOF>> {/* EOF during G[0]1 reading */dline++;axis_updated();DEBUG("EOF and Axis Updated (%d)", dline);yyterminate();}
 
 <X>{sign}?{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
@@ -191,12 +189,19 @@ int sanity(int argc, char **argv) {
     pinMode(LIM_X, INPUT);
     pinMode(LIM_Y, INPUT);
     pinMode(LIM_Z, INPUT);
+    pinMode(LIM_V, INPUT);
     
     // set up axis and motor parameters
     x_steps_per_mm = stepsPerMM('x'); 	
     y_steps_per_mm = stepsPerMM('y');
     z_steps_per_mm = stepsPerMM('z');
     v_steps_per_mm = stepsPerMM('v');
+    
+    //reset lockouts
+    lockouts.x = LOCKOUT_NULL;
+    lockouts.y = LOCKOUT_NULL;
+    lockouts.z = LOCKOUT_NULL;
+    lockouts.v = LOCKOUT_NULL;
     
     // set up driver(s):
     if((sx = initializeDevice()) == -1) {
@@ -222,17 +227,53 @@ void *lim_watchdog(void* ignored) {
     
     while(1) {
         nanosleep(&watchdelay,NULL);
-        if(digitalRead(LIM_X) == LIM_TRIGGER || digitalRead(LIM_Y) == LIM_TRIGGER) {
-	    if(digitalRead(LIM_X) == LIM_TRIGGER) {
-		lockouts.x = LOCKOUT_NEG;
+        
+	    //check if X lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_X) == LIM_TRIGGER && lockouts.x == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(X_DIR_PIN) == DIR_NEG) {
+		   lockouts.x = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout
+		if(digitalRead(X_DIR_PIN) == DIR_POS) {
+		   lockouts.x = LOCKOUT_POS;
+		}
 	    }
-	    else if(digitalRead(LIM_Y) == LIM_TRIGGER) {
-		lockouts.y = LOCKOUT_NEG;		
+	    //check if Y lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_Y) == LIM_TRIGGER && lockouts.y == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(Y_DIR_PIN) == DIR_NEG) {
+		   lockouts.y = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(Y_DIR_PIN) == DIR_POS) {
+		   lockouts.y = LOCKOUT_POS;
+		}		
 	    }
-            eprintf("LIMIT SWITCH DEPRESSED; SYSTEM SHUTTING DOWN COMMIT SEPUKKU NOW!!!");
-            exit(1);
-            pthread_exit(NULL);
-        }
+	    //check if Z lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_Z) == LIM_TRIGGER && lockouts.z == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(Z_DIR_PIN) == DIR_NEG) {
+		   lockouts.z = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(Z_DIR_PIN) == DIR_POS) {
+		   lockouts.z = LOCKOUT_POS;
+		}		
+	    }
+	    //check if V lim is triggered and that the lockout has not already been set
+	    if(digitalRead(LIM_V) == LIM_TRIGGER && lockouts.v == LOCKOUT_NULL) {
+		//if last move was in negative direction set the negative lockout
+		if(digitalRead(V_DIR_PIN) == DIR_NEG) {
+		   lockouts.v = LOCKOUT_NEG;
+		}
+		//if last move was in positive direction set the positive lockout 
+		if(digitalRead(V_DIR_PIN) == DIR_POS) {
+		   lockouts.v = LOCKOUT_POS;
+		}		
+	    }
+            
+        
         pthread_yield_np();
     }
 }
@@ -283,12 +324,15 @@ void eprintf(const char *fmt, ...) {
 struct timespec constdelay;
 struct timespec xdelay;
 struct timespec ydelay;
+struct timespec zdelay;
+struct timespec vdelay;
 double y_writes;
 double x_writes;
 double steps_x;
 double steps_y;
 double steps_z;
 double steps_v;
+
 void *simul_y(void *targv) {
     double i;
     int *argv = (int *)targv;
@@ -319,14 +363,17 @@ void axis_updated() {
     double y_vel;
     double temp_x_time;
     double temp_y_time;
+    double temp_z_time;
+    double temp_v_time;
     double nano_x_time;
     double nano_y_time;
+    double nano_z_time;
+    double nano_v_time;
     double i;
 
-    DEBUG("Turning laser %s", (l_power > 0.0)?("on"):("off"));
-    laser(l_power);
     
-    DEBUG("\nFrom: <%f,%f,%f> to <%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, pos_x, pos_y, pos_z);
+    
+    DEBUG("\nFrom: <%f,%f,%f,%f> to <%f,%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, last_pos_v, pos_x, pos_y, pos_z, pos_v);
     
     dx = pos_x - last_pos_x;
     dy = pos_y - last_pos_y;
@@ -336,80 +383,104 @@ void axis_updated() {
     last_pos_y = pos_y;
     last_pos_z = pos_z;
     last_pos_v = pos_v;
-    pos_x = pos_y = pos_z = pos_v = 0.0; // changed from -1.0 by AC@5/11/14
+    //pos_x = pos_y = pos_z = pos_v = 0.0; // removed this reset 5/20/14 -NM was casuing axis to reset if it was not moved on a given line of gcode
     x_writes = y_writes = 0.0;
     
     steps_x = dx*x_steps_per_mm;
     steps_y = dy*y_steps_per_mm;
-    steps_z = stepsPerMM('Z') * dz;
-    steps_v = stepsPerMM('V') * dv;
+    steps_z = dz*z_steps_per_mm;
+    steps_v = dv*v_steps_per_mm;
     
-    DEBUG("dX: %f, dY: %f, dZ: %f, dV: %f",dx,dy,dz,dv);
+    DEBUG("\ndX: %f, dY: %f, dZ: %f, dV: %f",dx,dy,dz,dv);
 
     if((dx != 0) && (dy != 0))
     {
-    	x_vel = sqrt((V_MAX*V_MAX)/(1+((dy*dy)/(dx*dx))));
-    	y_vel = sqrt((V_MAX*V_MAX)/(1+((dx*dx)/(dy*dy))));
+    	x_vel = sqrt((V_BELT_MAX*V_BELT_MAX)/(1+((dy*dy)/(dx*dx))));
+    	y_vel = sqrt((V_BELT_MAX*V_BELT_MAX)/(1+((dx*dx)/(dy*dy))));
         
     }
     else
     {
-    	x_vel = V_MAX;
-    	y_vel = V_MAX;
+    	x_vel = V_BELT_MAX;
+    	y_vel = V_BELT_MAX;
     }
     
     temp_x_time = 1/((x_vel*x_steps_per_mm)/60000);	//calculate ms delay for x step
     temp_y_time = 1/((y_vel*y_steps_per_mm)/60000);	//calculate ms delay for y step
+    temp_z_time = 1/((V_SCREW_MAX*z_steps_per_mm)/60000);	//calculate ms delay for z step
+    temp_v_time = 1/((V_SCREW_MAX*v_steps_per_mm)/60000);	//calculate ms delay for v step
+    
     
     nano_x_time = ((temp_x_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
     nano_y_time = ((temp_y_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    nano_z_time = ((temp_z_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    nano_v_time = ((temp_v_time*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty)
+    
     
     xdelay.tv_nsec = (long)nano_x_time;
     ydelay.tv_nsec = (long)nano_y_time;
+    zdelay.tv_nsec = (long)nano_z_time;
+    vdelay.tv_nsec = (long)nano_v_time;
     constdelay.tv_nsec = NSEC_DELAY; // .5s, to stagger state changes
         
-    DEBUG("\nX %f steps at %f mm/s (d. %ld)\nY %f steps at %f mm/s (d. %ld)", steps_x, x_vel,xdelay.tv_nsec,steps_y,y_vel,ydelay.tv_nsec);
+    DEBUG("\nX %f steps at %f mm/min (d. %ld)\nY %f steps at %f mm/min (d. %ld)", steps_x, x_vel,xdelay.tv_nsec,steps_y,y_vel,ydelay.tv_nsec);
     
     // directional pins
     if(dx >= 0.0) {
-	set_dir(X_PIN, DIR_POS);
+	set_dir(X_DIR_PIN, DIR_POS);
     }
     else {
-	set_dir(X_PIN, DIR_NEG);
+	set_dir(X_DIR_PIN, DIR_NEG);
     }
     if(dy >= 0.0) {
-	set_dir(Y_PIN, DIR_POS);
+	set_dir(Y_DIR_PIN, DIR_POS);
     }
     else {
-	set_dir(Y_PIN, DIR_NEG);
+	set_dir(Y_DIR_PIN, DIR_NEG);
+    }
+    if(dz >= 0.0) {
+	set_dir(Z_DIR_PIN, DIR_POS);
+    }
+    else {
+	set_dir(Z_DIR_PIN, DIR_NEG);
+    }
+    if(dv >= 0.0) {
+	set_dir(V_DIR_PIN, DIR_POS);
+    }
+    else {
+	set_dir(V_DIR_PIN, DIR_NEG);
     }
 
+    //WILL NEED TO FIND MORE INTELLIGENT WAY TO PREVENT MOTOR FROM MOVING 
+    //IN THE LOCKOUT DIRECTION, FOR NOW IT WILL JUST STOP MOVING IN EITHER DIRECTION
+
     // Z Axis
-    if(steps_z != 0.0) {
-	if(dz >= 0.0) digitalWrite(Z_DIR_PIN, 1);
-	else digitalWrite(Z_DIR_PIN, 0);
+    if(steps_z != 0.0 && lockouts.z == LOCKOUT_NULL) {
 	for(i = 0.0; i <= fabs(steps_z); i++) {
 	    digitalWrite(Z_PIN, 1);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&zdelay,NULL);
             digitalWrite(Z_PIN, 0);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&zdelay,NULL);
 	}
     }
 
     // V Axis 
-    if(steps_v != 0.0) {
-	if(dv >= 0.0) digitalWrite(V_DIR_PIN, 1);
-	else digitalWrite(V_DIR_PIN, 0);
+    if(steps_v != 0.0 && lockouts.v == LOCKOUT_NULL) {
 	for(i = 0.0; i <= fabs(steps_v); i++) {
 	    digitalWrite(V_PIN, 1);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&vdelay,NULL);
             digitalWrite(V_PIN, 0);
-            nanosleep(&constdelay,NULL);
+            nanosleep(&vdelay,NULL);
 	}
     }
     
+    
+    DEBUG("Turning laser %s", (l_power > 0.0)?("on"):("off"));
+    laser(l_power);
+     
+    
     // Y Axis (threaded and gluten-free!)
-    if(steps_y != 0.0) {
+    if(steps_y != 0.0 && lockouts.y == LOCKOUT_NULL) {
         pthread_t y_thread;
         int rc;
         int argv[2];
@@ -424,7 +495,7 @@ void axis_updated() {
     }
     
     // X Axis
-    if(steps_x != 0.0) {
+    if(steps_x != 0.0 && lockouts.x == LOCKOUT_NULL) {
         for(i = 0.0; i <= fabs(steps_x); i++) {
             digitalWrite(X_PIN, 1);
             nanosleep(&xdelay,NULL);
@@ -455,34 +526,38 @@ void axis_updated() {
  */
 void set_dir(int axis, int dir) {
 	switch(axis) {
-		case X_PIN:
+		case X_DIR_PIN:
 			if(lockouts.x != (dir + 1)) { 
 				digitalWrite(X_DIR_PIN, dir);
-				if(lockouts.x != LOCKOUT_NULL) { 
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.x != LOCKOUT_NULL && digitalRead(LIM_X) != LIM_TRIGGER) { 
 					lockouts.x = LOCKOUT_NULL;
 				}
 			}
 			break;
-		case Y_PIN:
+		case Y_DIR_PIN:
 			if(lockouts.y != (dir + 1)) { 
 				digitalWrite(Y_DIR_PIN, dir);
-				if(lockouts.y != LOCKOUT_NULL) {
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.y != LOCKOUT_NULL && digitalRead(LIM_Y) != LIM_TRIGGER) {
 					lockouts.y = LOCKOUT_NULL;
 				}
 			}
 			break;
-		case Z_PIN:
+		case Z_DIR_PIN:
 			if(lockouts.z != (dir + 1)) { 
 				digitalWrite(Z_DIR_PIN, dir);
-				if(lockouts.z != LOCKOUT_NULL) {
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.z != LOCKOUT_NULL && digitalRead(LIM_Z) != LIM_TRIGGER) {
 					lockouts.z = LOCKOUT_NULL;
 				}
 			}
 			break;
-		case V_PIN:
+		case V_DIR_PIN:
 			if(lockouts.v != (dir + 1)) { 
 				digitalWrite(V_DIR_PIN, dir);
-				if(lockouts.v != LOCKOUT_NULL) {
+				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
+				if(lockouts.v != LOCKOUT_NULL && digitalRead(LIM_V) != LIM_TRIGGER) {
 					lockouts.v = LOCKOUT_NULL;
 				}
 			}
@@ -518,6 +593,67 @@ int laser(double power) {
 	}
 	
 	return 0;
+}
+
+int addLayer(int device_addr, int fwd_speed, int rev_speed) {
+	double step_count = 0;
+	struct timespec step_delay;
+	double temp_time;
+    	double nano_time;
+    	int i;
+    
+    	temp_time = 1/((V_BELT_MAX_JOG*x_steps_per_mm)/60000);	//calculate ms time delay from velocity
+    	nano_time = ((temp_time*1000000)/2);		//convert to ns and divide by 2
+       	step_delay.tv_nsec = (long)nano_time;
+	
+	//check that W axis is at neagtive limit
+	if(!readWLimit(device_addr, 0)){
+		DEBUG("\nwiper not at negative limit, cannot move x axis to limit"); 
+		return -11;
+	}
+	
+	DEBUG("\nmoving x axis to positive limit, out of the path of the wiper");
+	//set x axis direction to positive
+	set_dir(X_DIR_PIN, DIR_POS);
+	
+	//if x is not at postive limit then move it there
+	while(lockouts.x != LOCKOUT_POS) {
+		digitalWrite(X_PIN, 1);
+            	nanosleep(&step_delay,NULL);
+            	digitalWrite(X_PIN, 0);
+            	nanosleep(&step_delay,NULL);
+		step_count++;
+	}
+	
+	//move wiper to positive limit
+	moveToLimit(device_addr, 1, fwd_speed, 1);
+	
+	//freaks out when there isnt a delay
+	sleep(1);
+	
+	//move wiper to negative limit
+	moveToLimit(device_addr, 0, rev_speed, 1);
+	
+	//check that W axis is at negative limit
+	if(!readWLimit(device_addr, 0)) {
+		DEBUG("\nwiper is not at negative limit, cannot move x axis back to orginal position");
+		return -12;
+	}
+	
+	//set x axis direction to negative
+	set_dir(X_DIR_PIN, DIR_NEG);
+	
+	//return x axis to previous postion
+	for(i = 0; i<step_count; i++) {
+		digitalWrite(X_PIN, 1);
+            	nanosleep(&step_delay,NULL);
+            	digitalWrite(X_PIN, 0);
+            	nanosleep(&step_delay,NULL);
+        }
+        
+        DEBUG("\nx axis has been moved back to its original position");
+        
+        return 0;
 }
 
 /*
