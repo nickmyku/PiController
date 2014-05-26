@@ -1,0 +1,4 @@
+#!/bin/bash
+# Use this file when building on the actual Pi
+lex -t PIC_accel.l > PIC.c && gcc -DTEST_BUILD -DDEBUG_FLAG -o PIC_accel PIC.c drivers/sx1509.c drivers/axis_config.c -ll -lfl -lm -lpthread -lwiringPi
+#./pi-buildhandy
