@@ -24,7 +24,11 @@
 #include "y.PIC.h"
 #include "slave/commands.h"
 #include "drivers/sx1509.h"
+#include "drivers/sx1509.c"
 #include "drivers/axis_config.h"
+#include "drivers/axis_config.c"
+#include "drivers/limit_sw.h"
+#include "drivers/limit_sw.c"
     
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
@@ -44,13 +48,6 @@
 #define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
 #define RETRACTION_SPEED 255 /* speed which the wiper moves back to its home position (from 0 to 255) */
 
-typedef struct
-{
-	int x;
-	int y;
-	int z;
-	int v;
-} lockout_t;
 
 // globals (don't hate):
 FILE *fcomp; // compiled output (/tmp file)
@@ -78,6 +75,18 @@ char x_ready = 0;
 char y_ready = 0;
 pthread_t lim_thread;
 lockout_t lockouts;
+
+struct timespec constdelay;
+struct timespec xdelay;
+struct timespec ydelay;
+struct timespec zdelay;
+struct timespec vdelay;
+double y_writes;
+double x_writes;
+double steps_x;
+double steps_y;
+double steps_z;
+double steps_v;
 
 %}
 
@@ -321,17 +330,7 @@ void eprintf(const char *fmt, ...) {
 /*
  * Thread entry point for moving the Y axis simultaneously with the X axis
  */
-struct timespec constdelay;
-struct timespec xdelay;
-struct timespec ydelay;
-struct timespec zdelay;
-struct timespec vdelay;
-double y_writes;
-double x_writes;
-double steps_x;
-double steps_y;
-double steps_z;
-double steps_v;
+
 
 void *simul_y(void *targv) {
     double i;
@@ -520,56 +519,6 @@ void axis_updated() {
     laser(l_power); // last one out, get the lights
 }
 
-#pragma line 452
-/*
- * Sets the direction of an axis, adhering to the limit switch lockouts
- */
-void set_dir(int axis, int dir) {
-	switch(axis) {
-		case X_DIR_PIN:
-			if(lockouts.x != (dir + 1)) { 
-				digitalWrite(X_DIR_PIN, dir);
-				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
-				if(lockouts.x != LOCKOUT_NULL && digitalRead(LIM_X) != LIM_TRIGGER) { 
-					lockouts.x = LOCKOUT_NULL;
-				}
-			}
-			break;
-		case Y_DIR_PIN:
-			if(lockouts.y != (dir + 1)) { 
-				digitalWrite(Y_DIR_PIN, dir);
-				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
-				if(lockouts.y != LOCKOUT_NULL && digitalRead(LIM_Y) != LIM_TRIGGER) {
-					lockouts.y = LOCKOUT_NULL;
-				}
-			}
-			break;
-		case Z_DIR_PIN:
-			if(lockouts.z != (dir + 1)) { 
-				digitalWrite(Z_DIR_PIN, dir);
-				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
-				if(lockouts.z != LOCKOUT_NULL && digitalRead(LIM_Z) != LIM_TRIGGER) {
-					lockouts.z = LOCKOUT_NULL;
-				}
-			}
-			break;
-		case V_DIR_PIN:
-			if(lockouts.v != (dir + 1)) { 
-				digitalWrite(V_DIR_PIN, dir);
-				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
-				if(lockouts.v != LOCKOUT_NULL && digitalRead(LIM_V) != LIM_TRIGGER) {
-					lockouts.v = LOCKOUT_NULL;
-				}
-			}
-			break;
-		case LASER_PIN:
-			eprintf("I've got a mouse and he hasn't got a house\nI don't know why I call him Gerald.\nHe's getting rather old, but he's a good mouse.");
-			break;
-		default:
-			eprintf("Operator chromosome limit exceeded\nTrying to set a direction for axis '%d'\n\nDumbass.", axis);
-			break;
-	}	
-}
 
 /*
  * Sets the laser to the PWM-induced power level. Pew pew
