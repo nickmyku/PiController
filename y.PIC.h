@@ -41,7 +41,7 @@ void eprintf(const char *fmt, ...);
 void axis_updated();
 
 // set axis direction
-void set_dir(int axis, int dir);
+//void set_dir(int axis, int dir); //moved to drivers/limit_sw
 
 // runs the laser at power level
 int laser(double power);

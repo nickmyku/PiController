@@ -18,22 +18,20 @@
 #include <stdbool.h>
 #include <wiringPi.h>
 
+
 #include "handy.h"
 #include "slave/commands.h" 		/* for the pin definitions  */
 #include "drivers/axis_config.h"	/* defines motor parameters */
-#include "drivers/sx1509.h"		/* driver for W axis and LEDs*/
+#include "drivers/axis_config.c"
+#include "drivers/sx1509.h"		/* driver for W axis and LEDs */
+#include "drivers/sx1509.c"
+#include "drivers/limit_sw.h"		/* functions related to limit switches */
+#include "drivers/limit_sw.c"
+
 
 #define V_MAX (double)250.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define pthread_yield_np() pthread_yield(NULL)
-
-typedef struct
-{
-	int x;
-	int y;
-	int z;
-	int v;
-} lockout_t;
 
 // globals:
 double steps_per_mm_x;
@@ -41,7 +39,6 @@ double steps_per_mm_y;
 double steps_per_mm_z;
 double steps_per_mm_v;
 pthread_t lim_thread;
-lockout_t lockouts;
 
 // SX1509 Driver:
 int sx = -1;
@@ -323,59 +320,11 @@ void *lim_watchdog(void* ignored) {
 
 
 /*
- * Sets the direction of an axis, adhering to the limit switch lockouts
- */
-void set_dir(int axis, int dir) {
-	switch(axis) {
-		case X_DIR_PIN:
-			if(lockouts.x != (dir + 1)) { 
-				digitalWrite(X_DIR_PIN, dir);
-				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
-				if(lockouts.x != LOCKOUT_NULL && digitalRead(LIM_X) != LIM_TRIGGER) { 
-					lockouts.x = LOCKOUT_NULL;
-				}
-			}
-			break;
-		case Y_DIR_PIN:
-			if(lockouts.y != (dir + 1)) { 
-				digitalWrite(Y_DIR_PIN, dir);
-				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
-				if(lockouts.y != LOCKOUT_NULL && digitalRead(LIM_Y) != LIM_TRIGGER) {
-					lockouts.y = LOCKOUT_NULL;
-				}
-			}
-			break;
-		case Z_DIR_PIN:
-			if(lockouts.z != (dir + 1)) { 
-				digitalWrite(Z_DIR_PIN, dir);
-				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
-				if(lockouts.z != LOCKOUT_NULL && digitalRead(LIM_Z) != LIM_TRIGGER) {
-					lockouts.z = LOCKOUT_NULL;
-				}
-			}
-			break;
-		case V_DIR_PIN:
-			if(lockouts.v != (dir + 1)) { 
-				digitalWrite(V_DIR_PIN, dir);
-				//only reset lockout if sensor is no longer triggered, fixes small reverse movement bug
-				if(lockouts.v != LOCKOUT_NULL && digitalRead(LIM_V) != LIM_TRIGGER) {
-					lockouts.v = LOCKOUT_NULL;
-				}
-			}
-			break;
-		case LASER_PIN:
-			printf("I've got a mouse and he hasn't got a house\nI don't know why I call him Gerald.\nHe's getting rather old, but he's a good mouse.");
-			break;
-		default:
-			printf("Operator chromosome limit exceeded\nTrying to set a direction for axis '%d'\n\nDumbass.", axis);
-			break;
-	}	
-}
-
-/*
  * Prettyful debug function 
  * (DO NOT CALL THIS DIRECTLY - use DEBUG() instead, or else tiny elves will feast on your toes)
- */
+ */ 
+ 
+
 void printDebug(const char *fmt, const int line, const char *file, ...) {
 #ifdef DEBUG_FLAG
     va_list list;
@@ -388,3 +337,5 @@ void printDebug(const char *fmt, const int line, const char *file, ...) {
     va_end(list);
 #endif /* DEBUG_FLAG */
 }
+
+

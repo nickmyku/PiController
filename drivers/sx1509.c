@@ -12,10 +12,10 @@
 #include <math.h>
 #include <time.h>
 
-#include "../y.PIC.h" // DEBUG()
-#include "../slave/commands.h"
-
-// wiringPi included by PIC.l
+/*	following includes need to be in parent file	*/ 
+//include "../y.PIC.h" // DEBUG()
+//include "../slave/commands.h"
+//include <wiringPi>
 
 #define writeReg(dev,reg,data) wiringPiI2CWriteReg8(dev,reg,data)
 #define readReg(dev,reg) wiringPiI2CReadReg8(dev,reg)
@@ -32,7 +32,7 @@ __has_feature(cxx_binary_literals)
 const int motorPwmPin = 3;	//pin (on Data Register A) that the pwm signal of the dc motor driver is connected to
 const int w_lim_0 = 0;		//pin (on Data Register B) where w limit switch 0 is connected	
 const int w_lim_1 = 1;		//pin (on Data Regsiter B) where w limit switch 1 is connected
-const int timeout = 200000;	//timeout value for w axis "move to limit" function
+const int w_timeout = 200000;	//timeout value for w axis "move to limit" function
 const int delayMS = 100;	//delay between limit switch checks on w axis "move to limit" function
 
 //sx1509 internal register addresses
@@ -537,7 +537,7 @@ int moveToLimit(int device, bool dir, int speed, bool brake)
 	//loop which continuosly checks limit switches until it detects a change or times out
 	if(dir)
 	{
-		while(!limit && (time<timeout))
+		while(!limit && (time<w_timeout))
 		{
 			//check if limit switch is depressed
 			limit = readWLimit(device, 1);
@@ -549,7 +549,7 @@ int moveToLimit(int device, bool dir, int speed, bool brake)
 	}
 	else
 	{
-		while(!limit && (time<timeout))
+		while(!limit && (time<w_timeout))
 		{
 			//check if limit switch is depressed
 			limit = readWLimit(device, 0);
@@ -564,7 +564,7 @@ int moveToLimit(int device, bool dir, int speed, bool brake)
 	motorStop(device, brake);
 	
 	//inform user if timeout condition occured
-	if(time>timeout)
+	if(time>w_timeout)
 	{
 		printf("movement timed out, motor isnt powered or it got stuck\n");
 		return -3;

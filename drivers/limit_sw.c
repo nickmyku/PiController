@@ -5,10 +5,11 @@
 //Created May 26, 2014
 
 #include <stdio.h>
-#include <wiringPi.h>
 
-#include "slave/commands.h"
-#include "../y.PIC.h" // DEBUG()
+/*	following includes need to be in parent file	*/ 
+//include "../y.PIC.h" // DEBUG()
+//include "../slave/commands.h"
+//include <wiringPi>
 
 typedef struct
 {
@@ -20,7 +21,6 @@ typedef struct
 
 lockout_t lockouts;
 
-#pragma line 452
 /*
  * Sets the direction of an axis, adhering to the limit switch lockouts
  */
@@ -63,10 +63,10 @@ void set_dir(int axis, int dir) {
 			}
 			break;
 		case LASER_PIN:
-			eprintf("I've got a mouse and he hasn't got a house\nI don't know why I call him Gerald.\nHe's getting rather old, but he's a good mouse.");
+			DEBUG("I've got a mouse and he hasn't got a house\nI don't know why I call him Gerald.\nHe's getting rather old, but he's a good mouse.");
 			break;
 		default:
-			eprintf("Operator chromosome limit exceeded\nTrying to set a direction for axis '%d'\n\nDumbass.", axis);
+			DEBUG("Operator chromosome limit exceeded\nTrying to set a direction for axis '%d'\n\nDumbass.", axis);
 			break;
 	}	
 }

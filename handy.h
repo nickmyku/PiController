@@ -7,8 +7,16 @@
  * Copyright 2014 Embark Industries, all rights reserved. 
  */
 
+
+// use this to provide dev-only feedback. See printDebug() too.
+#define DEBUG(fmt, ...)\
+do {\
+    printDebug(fmt, __LINE__, __FILE__, ## __VA_ARGS__);\
+} while(0)
+
+
 void move_pin(int pin, int speed, double steps_per_mm);
 void *lim_watchdog(void* ignored);
-void set_dir(int axis, int dir);
+//void set_dir(int axis, int dir); //moved to drivers/limit_sw
 
 #endif /* HANDY_H_ */
