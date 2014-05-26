@@ -1,6 +1,6 @@
 #ifndef MCP4451_C_
 //driver for the mcp4451 digital potentiometer chip
-//used to control sorensen DCS60-18 supplies
+//used to control sorensen DCS60-18 supplies - they will power the laser
 //Nicholas Mykulowycz
 //Created May 26, 2014
 
@@ -40,7 +40,7 @@ int main (void)
 }
 #endif	/* MCP_DRIVER_MAIN */
 
-int intitializeMCP ()
+int intitializeMCP()
 {
 	int device;
 	
@@ -53,5 +53,73 @@ int intitializeMCP ()
 	
 	return device;
 }
+
+void setPotValue(int device, int pot_addr, int value)
+{
+	bool addr_bits[8];
+	
+	//convert address into boolean array
+	intToBits(addr_bits, pot_addr);
+	
+	//rearrage address
+	addr_bits[0] = addr_bits[4];
+	addr_bits[1] = addr_bits[5];
+	addr_bits[2] = addr_bits[6];
+	addr_bits[3] = addr_bits[7];
+	
+	//add the write command bits
+	addr_bits[4] = 0;
+	addr_bits[5] = 0;
+	
+	//dont care about this bit, setting to 0
+	addr_bits[6] = 0;
+	
+	//this is technically a data bit but its out of our working range
+	addr_bits[7] = 0;
+	
+	//convert bits back to integer
+	pot_addr = bitsToInt(addr_bits);
+	
+	//make sure value is not out of range
+	value = scaleIntensity(value);
+	
+	//and finally we can write the value to the potentiometer
+	writeReg(device, pot_addr, value);
+	
+}
+
+int readPotValue(int device, int pot_addr)
+{
+	int value = 0;
+	bool addr_bits[8];
+	
+	//convert address into boolean array
+	intToBits(addr_bits, pot_addr);
+	
+	//rearrage address
+	addr_bits[0] = addr_bits[4];
+	addr_bits[1] = addr_bits[5];
+	addr_bits[2] = addr_bits[6];
+	addr_bits[3] = addr_bits[7];
+	
+	//add the write command bits
+	addr_bits[4] = 1;
+	addr_bits[5] = 1;
+	
+	//dont care about this bit, setting to 0
+	addr_bits[6] = 0;
+	
+	//this is technically a data bit but its out of our working range
+	addr_bits[7] = 0;
+	
+	//convert bits back to integer
+	pot_addr = bitsToInt(addr_bits);
+	
+	value = readDoubleReg(device, pot_addr);
+	
+	return value;
+}
+
+
 
 #endif  /* MCP4451_C_ */

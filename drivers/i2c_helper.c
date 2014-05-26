@@ -6,6 +6,7 @@
 //just so the full functions dont have to be written out every time
 #define writeReg(dev,reg,data) wiringPiI2CWriteReg8(dev,reg,data)
 #define readReg(dev,reg) wiringPiI2CReadReg8(dev,reg)
+#define readDoubleReg(dev,reg) wiringPiI2CReadReg16(dev,reg)
 
 
 //convert integer to a boolean array, needed so register read data is easier to manipulate
