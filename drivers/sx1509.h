@@ -4,8 +4,8 @@
 //created on April 23, 2014
 
 //prototpye function declarations
-int intToBits(bool * array, int number);
-int bitsToInt(bool array[8]);
+//int intToBits(bool * array, int number);	//moved to i2c helper
+//int bitsToInt(bool array[8]);		//moved to i2c helper
 int scaleIntensity(int num);
 int initializeDevice();
 int LEDBreath(int device, int pin, int onIntensity, int offIntensity);

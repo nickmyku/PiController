@@ -12,13 +12,12 @@
 #include <math.h>
 #include <time.h>
 
+#include "i2c_helper.c"		//helper functions and definitions for i2c
+
 /*	following includes need to be in parent file	*/ 
 //include "../y.PIC.h" // DEBUG()
 //include "../slave/commands.h"
 //include <wiringPi>
-
-#define writeReg(dev,reg,data) wiringPiI2CWriteReg8(dev,reg,data)
-#define readReg(dev,reg) wiringPiI2CReadReg8(dev,reg)
 
 #ifdef __clang__
 __has_feature(cxx_binary_literals)
@@ -573,53 +572,6 @@ int moveToLimit(int device, bool dir, int speed, bool brake)
 	return 0;
 }
 
-//convert integer to a boolean array, needed so register read data is easier to manipulate
-int intToBits(bool* array, int number)
-{
-	int i;
-	
-	if(number>255)
-	{
-		for(i=7; i>=0; i--)
-		{
-			array[i] = true;
-		}
-		return -1;
-	}
-	
-	for(i=7; i>=0; i--)
-	{
-		if(number >= (pow(2,i)))
-		{
-			number = number -pow(2,i);
-			array[i] = true;
-		}
-		else
-		{
-			array[i] = false;
-		}
-		
-		
-	}
-	
-	
-	return 0;
-}
 
-//converts a boolean array back to an integer, integer format is needed to send the dad back to the sx1509
-int bitsToInt(bool array[8])
-{
-	int i;
-	int number = 0;
-	for(i=0; i<8; i++)
-	{
-		if(array[i])
-		{
-			number = number + pow(2,i);
-		}	
-	}
-	
-	return number;
-}
 
 #endif /* SX1509_C_ */
