@@ -6,7 +6,7 @@
 //prototpye function declarations
 //int intToBits(bool * array, int number);	//moved to i2c helper
 //int bitsToInt(bool array[8]);		//moved to i2c helper
-int scaleIntensity(int num);
+//int scaleIntensity(int num);		//moved to i2c helper
 int initializeDevice();
 int LEDBreath(int device, int pin, int onIntensity, int offIntensity);
 int LEDColor(int device, int LEDNum, int red, int green, int blue);

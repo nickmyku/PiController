@@ -57,3 +57,21 @@ int bitsToInt(bool array[8])
 	return number;
 }
 
+int scaleIntensity(int num)
+{
+	//negative value limit is 0
+	if(num<0)
+	{
+		return 0;
+	}
+	
+	//positive value limit is 255
+	if(num > 255)
+	{
+		return 255;
+	}	
+	
+	//otherwise return the value which was input	
+	return num;
+}
+

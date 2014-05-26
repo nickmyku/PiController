@@ -326,23 +326,6 @@ int LEDColor(int device, int LEDNum, int red, int green, int blue)
 	return 0;
 }
 
-int scaleIntensity(int num)
-{
-	//negative value limit is 0
-	if(num<0)
-	{
-		return 0;
-	}
-	
-	//positive value limit is 255
-	if(num > 255)
-	{
-		return 255;
-	}	
-	
-	//otherwise return the value which was input	
-	return num;
-}
 
 //function is critially important to proper function of driver
 //any attempt to remove this function is considered a captial offense and is punishable by death
