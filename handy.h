@@ -15,6 +15,9 @@ do {\
 } while(0)
 
 
+// don't call this - call DEBUG() instead
+void printDebug(const char *fmt, const int line, const char *file, ...);
+
 void move_pin(int pin, int speed, double steps_per_mm);
 void *lim_watchdog(void* ignored);
 //void set_dir(int axis, int dir); //moved to drivers/limit_sw
