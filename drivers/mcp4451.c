@@ -54,6 +54,7 @@ int intitializeMCP()
 	return device;
 }
 
+//dont forget the write to device address is different than the read address
 void setPotValue(int device, int pot_addr, int value)
 {
 	bool addr_bits[8];
@@ -88,6 +89,7 @@ void setPotValue(int device, int pot_addr, int value)
 	
 }
 
+//dont forget the read device address is different than the write address
 int readPotValue(int device, int pot_addr)
 {
 	int value = 0;
