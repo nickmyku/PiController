@@ -1,0 +1,10 @@
+#!/bin/bash
+# Use this file when building on the actual Pi
+#set pull ups on limits
+gpio mode 17 up
+gpio mode 18 up
+gpio mode 19 up
+gpio mode 20 up
+#compile command
+lex -t PIC_accel.l > PIC.c && gcc -DTEST_BUILD -DDEBUG_FLAG -o PIC_accel PIC.c -ll -lfl -lm -lpthread -lwiringPi
+#./pi-buildhandy
