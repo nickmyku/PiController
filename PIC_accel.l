@@ -43,7 +43,7 @@
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_BELT_MAX (double)500.0 /* mm/min */
 #define V_BELT_MAX_JOG (double)300.0 /* mm/min */
-#define A_BELT_MAX (double)250.0 /* mm/min */
+#define A_BELT_MAX (double)5 /* mm/min */
 #define V_SCREW_MAX (double)50.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
@@ -379,6 +379,7 @@ void axis_updated() {
     double nano_start_y_delay;
     double delta_t_x_accel;
     double accel_x_step_count;
+    double steps_x_accel;
     double i; 
     
   
@@ -454,7 +455,9 @@ void axis_updated() {
     x_accel_delay.tv_nsec = (long)nano_start_x_delay;
     y_accel_delay.tv_nsec = (long)nano_start_y_delay;
 	
-    delta_t_x_accel=V_BELT_MAX/A_BELT_MAX;
+    steps_x_accel=V_BELT_MAX/A_BELT_MAX;
+
+    delta_t_x_accel = (x_accel_delay.tv_nsec)/steps_x_accel;
 
     // directional pins
     if(dx >= 0.0) {
@@ -525,21 +528,24 @@ void axis_updated() {
         }
     }
     
-    // X Axis
+    // X Axisc
     if(steps_x != 0.0 && lockouts.x == LOCKOUT_NULL) {
-
-	while(x_accel_delay.tv_nsec>xdelay.tv_nsec){
+	
+	DEBUG("\naccelerating");
+	while((long)x_accel_delay.tv_nsec>(long)xdelay.tv_nsec){
             digitalWrite(X_PIN, 1);
             nanosleep(&x_accel_delay,NULL);
             digitalWrite(X_PIN, 0);
             nanosleep(&x_accel_delay,NULL);
-            x_accel_delay.tv_nsec -= delta_t_x_accel;
+            x_accel_delay.tv_nsec = x_accel_delay.tv_nsec - (100/i);
 	    accel_x_step_count++;
             x_writes++;
             pthread_yield_np(); 
-	    DEBUG("\nx_accel_delay.tv_nsec is %ld and xdelay.tv_nsec is %ld", x_accel_delay.tv_nsec,xdelay.tv_nsec);
 	}
+	DEBUG("\nstep count - %f",accel_x_step_count);
+	DEBUG("\nstart delay - %ld \nmin delay - %ld",x_accel_delay.tv_nsec,xdelay.tv_nsec);	
 
+	DEBUG("\nconstant");
         for(i = accel_x_step_count; i <= fabs(steps_x)-accel_x_step_count; i++) {
             digitalWrite(X_PIN, 1);
             nanosleep(&xdelay,NULL);
@@ -549,6 +555,7 @@ void axis_updated() {
             pthread_yield_np(); 
 	   }
 
+	DEBUG("\ndeaccelerating");
 	for(i=0; i<accel_x_step_count; i++){
             digitalWrite(X_PIN, 1);
             nanosleep(&x_accel_delay,NULL);
