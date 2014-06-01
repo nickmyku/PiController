@@ -43,7 +43,7 @@
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_BELT_MAX (double)500.0 /* mm/min */
 #define V_BELT_MAX_JOG (double)300.0 /* mm/min */
-#define A_BELT_MAX (double)50.0 /* mm/min */
+#define A_BELT_MAX (double)250.0 /* mm/min */
 #define V_SCREW_MAX (double)50.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
@@ -443,7 +443,7 @@ void axis_updated() {
     {
     	x_accel = A_BELT_MAX;
     	y_accel = A_BELT_MAX;
-    
+    }
 
     start_x_delay = 1/((x_accel*x_steps_per_mm)/60000);	//calculate ms delay for x step
     start_y_delay = 1/((y_accel*y_steps_per_mm)/60000);	//calculate ms delay for y step
@@ -537,6 +537,7 @@ void axis_updated() {
 	    accel_x_step_count++;
             x_writes++;
             pthread_yield_np(); 
+	    DEBUG("\nx_accel_delay.tv_nsec is %ld and xdelay.tv_nsec is %ld", x_accel_delay.tv_nsec,xdelay.tv_nsec);
 	}
 
         for(i = accel_x_step_count; i <= fabs(steps_x)-accel_x_step_count; i++) {
@@ -552,7 +553,7 @@ void axis_updated() {
             digitalWrite(X_PIN, 1);
             nanosleep(&x_accel_delay,NULL);
             digitalWrite(X_PIN, 0);
-            nanoslee(&x_accel_delay,NULL);
+            nanosleep(&x_accel_delay,NULL);
             x_accel_delay.tv_nsec += delta_t_x_accel;
             x_writes++;
             pthread_yield_np(); 
