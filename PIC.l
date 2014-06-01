@@ -23,12 +23,13 @@
     
 #include "y.PIC.h"
 #include "slave/commands.h"
+#include "drivers/limit_sw.h"
+#include "drivers/limit_sw.c"
 #include "drivers/sx1509.h"
 #include "drivers/sx1509.c"
 #include "drivers/axis_config.h"
 #include "drivers/axis_config.c"
-#include "drivers/limit_sw.h"
-#include "drivers/limit_sw.c"
+
     
 #ifndef TEST_BUILD
 // building on non-Pi, include dummy GPIO interface:
@@ -47,6 +48,7 @@
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
 #define RETRACTION_SPEED 255 /* speed which the wiper moves back to its home position (from 0 to 255) */
+#define LAYER_TIMEOUT (long)300 /* in seconds, the max time for a add layer operation */ 
 
 // globals (don't hate):
 FILE *fcomp; // compiled output (/tmp file)
@@ -550,6 +552,14 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
 	double temp_time;
     	double nano_time;
     	int i;
+	time_t layer_curr_time;
+    	time_t layer_start_time;
+    	
+    	//set start time values
+    	layer_start_time = time(NULL);
+    	layer_curr_time = time(NULL);
+    	
+    	//DEBUG("\n\nstuff - %ld\n\n", layer_curr_time);
     
     	temp_time = 1/((V_BELT_MAX_JOG*x_steps_per_mm)/60000);	//calculate ms time delay from velocity
     	nano_time = ((temp_time*1000000)/2);		//convert to ns and divide by 2
@@ -566,12 +576,22 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
 	set_dir(X_DIR_PIN, DIR_POS);
 	
 	//if x is not at postive limit then move it there
-	while(lockouts.x != LOCKOUT_POS) {
+	while(lockouts.x != LOCKOUT_POS && (layer_curr_time-layer_start_time) < LAYER_TIMEOUT) {
 		digitalWrite(X_PIN, 1);
             	nanosleep(&step_delay,NULL);
             	digitalWrite(X_PIN, 0);
             	nanosleep(&step_delay,NULL);
 		step_count++;
+		layer_curr_time = time(NULL);
+		//DEBUG("\n\nstuff - %ld\n\n", layer_curr_time);
+		
+		
+	}
+	
+	//exit loop if timout occurs
+	if(layer_curr_time > LAYER_TIMEOUT) {
+		DEBUG("\ntimed out while attempting to add new layer - x axis never reached limit");
+		return -13;
 	}
 	
 	//move wiper to positive limit
@@ -589,6 +609,10 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
 		return -12;
 	}
 	
+	//reset time values
+	layer_start_time = time(NULL);
+	layer_curr_time = time(NULL);
+	
 	//set x axis direction to negative
 	set_dir(X_DIR_PIN, DIR_NEG);
 	
@@ -598,6 +622,11 @@ int addLayer(int device_addr, int fwd_speed, int rev_speed) {
             	nanosleep(&step_delay,NULL);
             	digitalWrite(X_PIN, 0);
             	nanosleep(&step_delay,NULL);
+            	layer_curr_time = time(NULL);
+            	if(layer_curr_time > LAYER_TIMEOUT){
+            		DEBUG("\ntimed out while attempting to add new layer - x axis could not return to orginal position");
+            		return -14;
+            	}
         }
         
         DEBUG("\nx axis has been moved back to its original position");
