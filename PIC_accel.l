@@ -43,6 +43,7 @@
 #define COMPILED_FILE "/tmp/PIC.o"
 #define V_BELT_MAX (double)500.0 /* mm/min */
 #define V_BELT_MAX_JOG (double)300.0 /* mm/min */
+#define A_BELT_MAX (double)50.0 /* mm/min */
 #define V_SCREW_MAX (double)50.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
@@ -81,6 +82,8 @@ struct timespec xdelay;
 struct timespec ydelay;
 struct timespec zdelay;
 struct timespec vdelay;
+struct timespec x_accel_delay;
+struct timespec y_accel_delay;
 double y_writes;
 double x_writes;
 double steps_x;
@@ -360,18 +363,25 @@ void axis_updated() {
     double dz;
     double x_vel;
     double y_vel;
+    double x_accel;
+    double y_accel;
     double temp_x_time;
     double temp_y_time;
     double temp_z_time;
     double temp_v_time;
     double nano_x_time;
-    double nano_y_time;
+    double nano_y_time;  
     double nano_z_time;
     double nano_v_time;
-    double i;
-
+    double start_x_delay;
+    double start_y_delay;
+    double nano_start_x_delay;
+    double nano_start_y_delay;
+    double delta_t_x_accel;
+    double accel_x_step_count;
+    double i; 
     
-    
+  
     DEBUG("\nFrom: <%f,%f,%f,%f> to <%f,%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, last_pos_v, pos_x, pos_y, pos_z, pos_v);
     
     dx = pos_x - last_pos_x;
@@ -424,6 +434,28 @@ void axis_updated() {
         
     DEBUG("\nX %f steps at %f mm/min (d. %ld)\nY %f steps at %f mm/min (d. %ld)", steps_x, x_vel,xdelay.tv_nsec,steps_y,y_vel,ydelay.tv_nsec);
     
+    if((x_vel != 0) && (y_vel != 0))
+    {
+    	x_accel = sqrt((A_BELT_MAX*A_BELT_MAX)/(1+((y_vel*y_vel)/(x_vel*x_vel))));
+    	y_accel = sqrt((A_BELT_MAX*A_BELT_MAX)/(1+((x_vel*x_vel)/(y_vel*y_vel))));
+    }
+    else
+    {
+    	x_accel = A_BELT_MAX;
+    	y_accel = A_BELT_MAX;
+    
+
+    start_x_delay = 1/((x_accel*x_steps_per_mm)/60000);	//calculate ms delay for x step
+    start_y_delay = 1/((y_accel*y_steps_per_mm)/60000);	//calculate ms delay for y step
+
+    nano_start_x_delay = ((start_x_delay*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty);
+    nano_start_y_delay = ((start_y_delay*1000000)/2); //convert to nanoseconds then divide by 2 (50% duty);
+
+    x_accel_delay.tv_nsec = (long)nano_start_x_delay;
+    y_accel_delay.tv_nsec = (long)nano_start_y_delay;
+	
+    delta_t_x_accel=V_BELT_MAX/A_BELT_MAX;
+
     // directional pins
     if(dx >= 0.0) {
 	set_dir(X_DIR_PIN, DIR_POS);
@@ -495,14 +527,37 @@ void axis_updated() {
     
     // X Axis
     if(steps_x != 0.0 && lockouts.x == LOCKOUT_NULL) {
-        for(i = 0.0; i <= fabs(steps_x); i++) {
+
+	while(x_accel_delay.tv_nsec>xdelay.tv_nsec){
+            digitalWrite(X_PIN, 1);
+            nanosleep(&x_accel_delay,NULL);
+            digitalWrite(X_PIN, 0);
+            nanosleep(&x_accel_delay,NULL);
+            x_accel_delay.tv_nsec -= delta_t_x_accel;
+	    accel_x_step_count++;
+            x_writes++;
+            pthread_yield_np(); 
+	}
+
+        for(i = accel_x_step_count; i <= fabs(steps_x)-accel_x_step_count; i++) {
             digitalWrite(X_PIN, 1);
             nanosleep(&xdelay,NULL);
             digitalWrite(X_PIN, 0);
             nanosleep(&xdelay,NULL);
             x_writes++;
             pthread_yield_np(); 
-        }
+	   }
+
+	for(i=0; i<accel_x_step_count; i++){
+            digitalWrite(X_PIN, 1);
+            nanosleep(&x_accel_delay,NULL);
+            digitalWrite(X_PIN, 0);
+            nanoslee(&x_accel_delay,NULL);
+            x_accel_delay.tv_nsec += delta_t_x_accel;
+            x_writes++;
+            pthread_yield_np(); 
+	}
+
         DEBUG("Wrote %f X signals",x_writes);
     }
     
@@ -622,3 +677,4 @@ void cleanup() {
     fclose(fcomp);
     system("sync");
 }
+
