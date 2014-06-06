@@ -380,7 +380,7 @@ void axis_updated() {
     double delta_t_x_accel;
     double accel_x_step_count;
     double steps_x_accel;
-    double steps_x_time;
+    double x_accel_time;
     double x_accel_distance;
     double x_accel_steps;
 
@@ -459,13 +459,13 @@ void axis_updated() {
     x_accel_delay.tv_nsec = (long)nano_start_x_delay;
     y_accel_delay.tv_nsec = (long)nano_start_y_delay;
 	
-    steps_x_time = x_vel/x_accel;
+    x_accel_time = x_vel/x_accel;
     
-    x_accel_distance = .5*x_accel*(steps_x_time*steps_x_time);
+    x_accel_distance = x_accel + (.5*x_accel*(x_accel_time*x_accel_time));
 
     x_accel_steps = x_accel_distance*x_steps_per_mm;
 
-    delta_t_x_accel = steps_x_time/x_accel_steps;
+    delta_t_x_accel = x_accel_time/x_accel_steps;
 
     // directional pins
     if(dx >= 0.0) {
