@@ -461,7 +461,7 @@ void axis_updated() {
 	
     x_accel_time = x_vel/x_accel;
     
-    x_accel_distance = x_accel + (.5*x_accel*(x_accel_time*x_accel_time));
+    x_accel_distance = x_accel + ((x_accel*(x_accel_time*x_accel_time))/(double)2);
 
     x_accel_steps = x_accel_distance*x_steps_per_mm;
 
