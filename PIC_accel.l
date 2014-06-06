@@ -540,7 +540,7 @@ void axis_updated() {
     if(steps_x != 0.0 && lockouts.x == LOCKOUT_NULL) {
 	
 	DEBUG("\naccelerating");
-	DEBUG("\naccel start delay: %ld\naccel delta delay: %ld", x_accel_delay.tv_nsec, delta_t_x_accel);
+	DEBUG("\naccel start delay: %ld\naccel delta delay: %ld", x_accel_delay.tv_nsec, (long)delta_t_x_accel);
 	//while((long)x_accel_delay.tv_nsec>(long)xdelay.tv_nsec){
         for(i = 0; i< x_accel_steps; i++){
             digitalWrite(X_PIN, 1);
