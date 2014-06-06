@@ -540,12 +540,14 @@ void axis_updated() {
     if(steps_x != 0.0 && lockouts.x == LOCKOUT_NULL) {
 	
 	DEBUG("\naccelerating");
-	while((long)x_accel_delay.tv_nsec>(long)xdelay.tv_nsec){
+	DEBUG("\naccel start delay: %ld\naccel delta delay: %ld", x_accel_delay.tv_nsec, delta_t_x_accel);
+	//while((long)x_accel_delay.tv_nsec>(long)xdelay.tv_nsec){
+        for(i = 0; i< x_accel_steps; i++){
             digitalWrite(X_PIN, 1);
             nanosleep(&x_accel_delay,NULL);
             digitalWrite(X_PIN, 0);
             nanosleep(&x_accel_delay,NULL);
-            x_accel_delay.tv_nsec -= delta_t_x_accel;
+            x_accel_delay.tv_nsec -= (long)delta_t_x_accel;
 	    accel_x_step_count++;
             x_writes++;
             pthread_yield_np(); 
