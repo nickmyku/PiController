@@ -460,12 +460,27 @@ void axis_updated() {
     y_accel_delay.tv_nsec = (long)nano_start_y_delay;
 	
     x_accel_time = x_vel/x_accel;
+
+    //convert from min? to ms
+    //x_accel_time *= 60000;
+
+    //convert from ms to ns
+    //x_accel_time *= 1000000;
     
-    x_accel_distance = x_accel + ((x_accel*(x_accel_time*x_accel_time))/(double)2);
+    x_accel_distance = x_vel + ((x_accel*(x_accel_time*x_accel_time))/(double)2);
 
     x_accel_steps = x_accel_distance*x_steps_per_mm;
 
     delta_t_x_accel = x_accel_time/x_accel_steps;
+    
+    //convert from min? to ms
+    delta_t_x_accel *= 60000;
+
+    //convert from ms to na
+    delta_t_x_accel *= 1000000;
+
+    //divide by 2 for 50 percvnt duty
+    delta_t_x_accel /=2;
 
     // directional pins
     if(dx >= 0.0) {
@@ -540,9 +555,9 @@ void axis_updated() {
     if(steps_x != 0.0 && lockouts.x == LOCKOUT_NULL) {
 	
 	DEBUG("\naccelerating");
-	DEBUG("\naccel start delay: %ld\naccel delta delay: %ld", x_accel_delay.tv_nsec, (long)delta_t_x_accel);
-	//while((long)x_accel_delay.tv_nsec>(long)xdelay.tv_nsec){
-        for(i = 0; i< x_accel_steps; i++){
+	DEBUG("\naccel start delay: %ld\naccel delta delay: %f", x_accel_delay.tv_nsec, delta_t_x_accel);
+	while((long)x_accel_delay.tv_nsec>(long)xdelay.tv_nsec){
+        //for(i = 0; i< x_accel_steps; i++){
             digitalWrite(X_PIN, 1);
             nanosleep(&x_accel_delay,NULL);
             digitalWrite(X_PIN, 0);
