@@ -41,9 +41,9 @@
 #endif
 
 #define COMPILED_FILE "/tmp/PIC.o"
-#define V_BELT_MAX (double)500.0 /* mm/min */
+#define V_BELT_MAX (double)5000.0 /* mm/min */
 #define V_BELT_MAX_JOG (double)300.0 /* mm/min */
-#define A_BELT_MAX (double)5 /* mm/min */
+#define A_BELT_MAX (double)1 /* mm/min */
 #define V_SCREW_MAX (double)50.0 /* mm/min */
 #define NSEC_DELAY 500000.0 /* Nanoseconds between signals */
 #define DEPOSITION_SPEED 255 /* speed which the wiper spreads the powder  (from 0 to 255) */
@@ -129,7 +129,7 @@ sign "-"
 <MOVEMENT>{zaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 Z#.# */yyless(1);BEGIN Z;}
 <MOVEMENT>{vaxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 V#.# */yyless(1);BEGIN V;}
 <MOVEMENT>{laxis}{sign}?{digit}+{point}{digit}+ {/* G[0]1 L#.# */yyless(1);BEGIN L;}
-<MOVEMENT>{newline} {/* EOL of G[0]1 */dline++;DEBUG("Axis Updated (%d)", dline);axis_updated();BEGIN INITIAL;}
+<MOVEMENT>{newline} {/* EOL of G[0]1 */dline++;DEBUG("Axis Updated (%d)", dline);axis_updated();sleep(1);BEGIN INITIAL;}
 <MOVEMENT><<EOF>> {/* EOF during G[0]1 reading */dline++;axis_updated();DEBUG("EOF and Axis Updated (%d)", dline);yyterminate();}
 
 <X>{sign}?{digit}+{point}{digit}+ {pos_x = strtod(yytext, NULL);BEGIN MOVEMENT;}
@@ -377,12 +377,13 @@ void axis_updated() {
     double start_y_delay;
     double nano_start_x_delay;
     double nano_start_y_delay;
-    double delta_t_x_accel;
     double accel_x_step_count;
-    double steps_x_accel;
-    double x_accel_time;
-    double x_accel_distance;
-    double x_accel_steps;
+    double accel_steps_x;
+    //double x_accel_time;
+    //double x_accel_distance;
+    //double x_accel_steps;
+    double v_x;
+    double area_x;
 
     double i; 
     
@@ -458,29 +459,17 @@ void axis_updated() {
 
     x_accel_delay.tv_nsec = (long)nano_start_x_delay;
     y_accel_delay.tv_nsec = (long)nano_start_y_delay;
-	
-    x_accel_time = x_vel/x_accel;
-
-    //convert from min? to ms
-    //x_accel_time *= 60000;
-
-    //convert from ms to ns
-    //x_accel_time *= 1000000;
     
-    x_accel_distance = x_vel + ((x_accel*(x_accel_time*x_accel_time))/(double)2);
-
-    x_accel_steps = x_accel_distance*x_steps_per_mm;
-
-    delta_t_x_accel = x_accel_time/x_accel_steps;
+    //calculate number of steps needed to reach max velocity
+    accel_steps_x = x_vel/x_accel;
     
-    //convert from min? to ms
-    delta_t_x_accel *= 60000;
-
-    //convert from ms to na
-    delta_t_x_accel *= 1000000;
-
-    //divide by 2 for 50 percvnt duty
-    delta_t_x_accel /=2;
+    //covers condition where movement is small and constant velocity can not be reached
+    if(accel_steps_x > (fabs(steps_x)/2)){
+        accel_steps_x = fabs(steps_x)/2;
+    }
+    
+    //calculate area of constant square so time delay can be deived later
+    area_x = x_accel * nano_start_x_delay;
 
     // directional pins
     if(dx >= 0.0) {
@@ -551,47 +540,55 @@ void axis_updated() {
         }
     }
     
-    // X Axisc
+    // X Axis
     if(steps_x != 0.0 && lockouts.x == LOCKOUT_NULL) {
 	
-	DEBUG("\naccelerating");
-	DEBUG("\naccel start delay: %ld\naccel delta delay: %f", x_accel_delay.tv_nsec, delta_t_x_accel);
-	while((long)x_accel_delay.tv_nsec>(long)xdelay.tv_nsec){
-        //for(i = 0; i< x_accel_steps; i++){
+	//DEBUG("\naccel start delay: %ld\nnumber steps: %f", x_accel_delay.tv_nsec, x_accel_steps);
+	
+	//DEBUG("\nACCELERATING");
+	
+        //while(accel_x_step_count <= accel_steps_x){
+        for(i = 0; i <= accel_steps_x; i++){
             digitalWrite(X_PIN, 1);
             nanosleep(&x_accel_delay,NULL);
             digitalWrite(X_PIN, 0);
             nanosleep(&x_accel_delay,NULL);
-            x_accel_delay.tv_nsec -= (long)delta_t_x_accel;
+            v_x = x_accel*i;
+            x_accel_delay.tv_nsec = (long)((area_x/v_x)); 
 	    accel_x_step_count++;
-            x_writes++;
+            //x_writes++;
             pthread_yield_np(); 
 	}
-	DEBUG("\nstep count - %f",accel_x_step_count);
-	DEBUG("\nstart delay - %ld \nmin delay - %ld",x_accel_delay.tv_nsec,xdelay.tv_nsec);	
 
-	DEBUG("\nconstant");
+	//DEBUG("\nstep count - %f\naccel end delay - %ld\nconsant delay - %ld",accel_x_step_count, x_accel_delay.tv_nsec,xdelay.tv_nsec);
+	
+	//DEBUG("\nCONSTNAT VELOCITY");
+
         for(i = accel_x_step_count; i <= fabs(steps_x)-accel_x_step_count; i++) {
             digitalWrite(X_PIN, 1);
             nanosleep(&xdelay,NULL);
             digitalWrite(X_PIN, 0);
             nanosleep(&xdelay,NULL);
-            x_writes++;
+            //x_writes++;
             pthread_yield_np(); 
 	   }
 
-	DEBUG("\ndeaccelerating");
-	for(i=0; i<accel_x_step_count; i++){
+	//DEBUG("\nDECCELERATING");
+	
+	//while(accel_x_step_count > 0){
+	for(i = accel_x_step_count; i > 0; i--){
             digitalWrite(X_PIN, 1);
             nanosleep(&x_accel_delay,NULL);
             digitalWrite(X_PIN, 0);
             nanosleep(&x_accel_delay,NULL);
-            x_accel_delay.tv_nsec += delta_t_x_accel;
-            x_writes++;
+            v_x = x_accel*i;
+            x_accel_delay.tv_nsec = (long)((area_x/v_x)/2); 
+            //accel_x_step_count--;
+            //x_writes++;
             pthread_yield_np(); 
 	}
 
-        DEBUG("Wrote %f X signals",x_writes);
+        DEBUG("\n\nWrote %f X signals",x_writes);
     }
     
     if(steps_y != 0.0) {
