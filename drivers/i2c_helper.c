@@ -42,12 +42,61 @@ int intToBits(bool* array, int number)
 	return 0;
 }
 
+//convert integer to a boolean array, needed so register read data is easier to manipulate
+int intToBits16(bool* array, int number)
+{
+	int i;
+	
+	if(number>65535)
+	{
+		for(i=15; i>=0; i--)
+		{
+			array[i] = true;
+		}
+		return -1;
+	}
+	
+	for(i=15; i>=0; i--)
+	{
+		if(number >= (pow(2,i)))
+		{
+			number = number -pow(2,i);
+			array[i] = true;
+		}
+		else
+		{
+			array[i] = false;
+		}
+		
+		
+	}
+	
+	
+	return 0;
+}
+
 //converts a boolean array back to an integer, integer format is needed to send the dad back to the sx1509
 int bitsToInt(bool array[8])
 {
 	int i;
 	int number = 0;
 	for(i=0; i<8; i++)
+	{
+		if(array[i])
+		{
+			number = number + pow(2,i);
+		}	
+	}
+	
+	return number;
+}
+
+//converts a boolean array back to an integer
+int bitsToInt16(bool array[16])
+{
+	int i;
+	int number = 0;
+	for(i=0; i<16; i++)
 	{
 		if(array[i])
 		{
