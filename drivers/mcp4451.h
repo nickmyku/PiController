@@ -6,6 +6,8 @@
 
 //prototype functions
 int intitializeMCP();
+int setLaserPower(int device, double precent);
+int setLaserCurrent(int device, double current, bool dual_supply);
 int setVoltage(int device, int supply, double voltage);
 int setCurrent(int device, int supply, double current);
 double getVoltage(int device, int supply);

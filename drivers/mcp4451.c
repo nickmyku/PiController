@@ -28,6 +28,8 @@ const int POT2		= 0x06;
 const int POT3		= 0x07;
 #define MAX_VOLT	(double)60.0	//maximum voltage setting on supply (DCS60-18E)
 #define MAX_CURR	(double)18.0	//maximum current setty on supply (DCS60-18E)
+#define MAX_LASER_CURR	(double)20.0	//max current for 15W oclaro MEA-200
+#define LASER_VOLT	(double)5.0	//kind of arbitrary, laser diode only ever reaches ~3V
 
 //#ifdef MCP_DRIVER_MAIN
 int main (void)
@@ -42,11 +44,16 @@ int main (void)
 	
 	mcp = intitializeMCP();
 	
-	setVoltage(mcp, 0, 0.0);
-	setVoltage(mcp, 1, 0.0);
-	setCurrent(mcp, 0, 0.0);
-	setCurrent(mcp, 1, 0.0);
+	//setVoltage(mcp, 0, 0);
+	//setVoltage(mcp, 1, 0);
+	//setCurrent(mcp, 0, 0.0);
+	//setCurrent(mcp, 1, 0.0);
 	
+	//setLaserCurrent(mcp, 21, true);
+	
+	//setPotValue(mcp, TCON0, 255);
+	
+	setLaserPower(mcp, 0);
 	
 	volt0 = getVoltage(mcp, 0);
 	volt1 = getVoltage(mcp, 1);
@@ -54,6 +61,8 @@ int main (void)
 	curr1 = getCurrent(mcp, 1);
 	printf("---Supply 0---\nVoltage: %f\nCurrent: %f\n\n", volt0, curr0);
 	printf("---Supply 1---\nVoltage: %f\nCurrent: %f\n\n", volt1, curr1);
+	
+	
 	
 	
 	
@@ -71,9 +80,80 @@ int intitializeMCP()
 		// error out, caller must handle errors:
 		return -1;
 	}
+	//enable all potentiometers, if any pins are tri stated power supplies go to max output
+	setPotValue(device, TCON0, 255);
+	setPotValue(device, TCON1, 255);
 	
 	
 	return device;
+}
+
+int setLaserPower(int device, double precent){
+	double current;
+	
+	if(precent >= 0 && precent <= 100){
+		//scale precet to a decimal between 0 and 1
+		precent /= 100;
+		//multiply max laser current by precentage of power
+		current = MAX_LASER_CURR * precent;
+		//send command
+		setLaserCurrent(device, current, true);
+		return 1;
+	}
+	else{
+		printf("how about next time you try selecting a laser power thats actually in range\n");
+		return -1;
+	}
+
+
+}
+
+//set the output current of the supplies for the laser
+int setLaserCurrent(int device, double current, bool dual_supply){
+	
+	if(current <= 0){
+		if(dual_supply){
+			//set voltages to 0
+			setVoltage(device, 0 ,0);
+			setVoltage(device, 1, 0);
+			//set currens to 0
+			setCurrent(device, 0, 0);
+			setCurrent(device, 1, 0);
+		}
+		else{
+			//set voltage to 0
+			setVoltage(device, 0, 0);
+			//set current to 0
+			setCurrent(device, 0 ,0);
+		}
+		//short out laser pins - power supplies dont actually go to 0
+		digitalWrite(LASER_PIN, 0);
+		return 0;
+	}
+	//as long as requested current is below mx send commands
+	else if(current <= MAX_LASER_CURR){
+		//if both supplies are in use divide current by 2 and send commands
+		if(dual_supply){
+			setCurrent(device, 0, (current/2));
+			setCurrent(device, 1, (current/2));
+			setVoltage(device, 0, LASER_VOLT);
+			setVoltage(device, 1, LASER_VOLT);
+		}
+		//otherwise just send current command
+		else{
+			setCurrent(device, 0, current);
+		}
+		return 1;
+	}
+	//if requested laser current is greater than software defined max, throw error
+	else{
+		printf("does %f sound 'less than or equal to' %f to you?\n", current, MAX_LASER_CURR);
+		return -1;
+	}
+		
+
+
+
 }
 
 //sets the output voltage of sorensen supply 0 or 1
@@ -95,6 +175,12 @@ int setVoltage(int device, int supply, double voltage){
 	}
 	
 	voltage_255 = scaleTo255(voltage, MAX_VOLT);
+	
+	//255 is the 0 voltage value, set pot function interperates 256 as 511
+	//and further lowers voltage
+	if(voltage_255 ==255){
+		voltage_255 = 256;
+	}
 	
 	setPotValue(device, pot_reg, voltage_255);
 
@@ -120,6 +206,13 @@ int setCurrent(int device, int supply, double current){
 	}
 	
 	current_255 = scaleTo255(current, MAX_CURR);
+	
+	//255 is the 0 current value, set pot function interperates 256 as 511
+	//and further lowers current
+	if(current_255 ==255){
+		current_255 = 256;
+	}
+	
 	
 	setPotValue(device, pot_reg, current_255);
 	
@@ -293,7 +386,14 @@ void setPotValue(int device, int pot_addr, int value)
 	addr_bits[1] = 0;
 	
 	//this is technically a data bit but its out of our working range
-	addr_bits[0] = 0;
+	//creates short circuit when bit is set to 1
+	if(value > 255){
+		addr_bits[0] = 1;
+		
+	}
+	else{
+		addr_bits[0] = 0;
+	}
 	
 	//convert bits back to integer
 	pot_addr = bitsToInt(addr_bits);
