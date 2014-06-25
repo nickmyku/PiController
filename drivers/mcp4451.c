@@ -33,7 +33,7 @@ const int POT3		= 0x07;
 #define MAX_LASER_CURR	(double)20.0	//max current for 15W oclaro MEA-200
 #define LASER_VOLT	(double)5.0	//kind of arbitrary, laser diode only ever reaches ~3V
 
-//#ifdef MCP_DRIVER_MAIN
+#ifdef MCP_DRIVER_MAIN
 int main (void)
 {
 	//create identifier for digital potentiometer
@@ -71,7 +71,7 @@ int main (void)
 	
 
 }
-//#endif	/* MCP_DRIVER_MAIN */
+#endif	/* MCP_DRIVER_MAIN */
 
 int intitializeMCP()
 {
