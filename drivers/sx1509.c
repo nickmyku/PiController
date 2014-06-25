@@ -55,11 +55,14 @@ int REGTFALL[16] =	{   0,   0,   0,   0,0x39,0x3e,0x43,0x48,   0,   0,   0,   0,
 #include <stdbool.h>
 #include <math.h>
 #include <time.h>
-#include "i2c_helper.c"	//helper functions and definitions for i2c 
+#include <stdarg.h>
+
+#include "i2c_helper.c"		//helper functions and definitions for i2c 
 #include "../slave/debug.h"	//DEBUG functions
 #include "../slave/debug.c"	//DEBUG functions
 #include "../slave/commands.h"
-#include <wiringPi>
+
+#include "sx1509.h"
 
 int main (void)
 {
