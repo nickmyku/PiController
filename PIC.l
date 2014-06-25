@@ -350,10 +350,11 @@ void axis_updated() {
     double nano_z_time;
     double nano_v_time;
     double i;
-
-    
     
     DEBUG("\nFrom: <%f,%f,%f,%f> to <%f,%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, last_pos_v, pos_x, pos_y, pos_z, pos_v);
+    DEBUG("\nSetting laser to %s", l_power);
+    setLaserPower(mcp, l_power);
+    
     
     dx = pos_x - last_pos_x;
     dy = pos_y - last_pos_y;
@@ -454,9 +455,15 @@ void axis_updated() {
 	}
     }
     
+    DEBUG("\nTurning laser %s", (l_power > 0.0)?("on"):("off"));
+    //actually enable laser if l_power is greater than 0
+    if(l_power > 0){
+    	engageLaser(true);
+    }
+    else{
+    	engageLaser(false);
+    }
     
-    DEBUG("Turning laser %s", (l_power > 0.0)?("on"):("off"));
-    laser(l_power);
      
     
     // Y Axis (threaded and gluten-free!)
@@ -497,31 +504,34 @@ void axis_updated() {
 
     DEBUG("No Mr. Bond, I expect you to (NOT) die!");
     l_power = 0.0;
-    laser(l_power); // last one out, get the lights
+    engageLaser(false); // last one out, get the lights
 }
 
 
 
 /*
- * Sets the laser to the PWM-induced power level. Pew pew
+ * Turns on the laser - by turning off the short circuit attached to it, efficency at its finest
  */
-int laser(double power) {
+int engageLaser(bool active) {
 	// leave this in, it has a legitimate purpose I promise
+	// ^ moved to new function at request of above comment ^
 	if(ON_A_SHARK_HEAD) {
 		eprintf("Kiss my black ass, Dr. Evil. Mr. Bigglesworth too!");
 		return -1;
 	}
 
-	if(power == 100.0) {
+	if(active) {
 		digitalWrite(LASER_PIN, 1);
 	}
-	else if(power == 0.0) {
+	else{
 		digitalWrite(LASER_PIN, 0);
 	}
-	else {
-		DEBUG("What we have here is a laser incapable of PWM control");
-		return -1;
-	}
+	
+	
+	//else {
+	//	DEBUG("What we have here is a laser incapable of PWM control");
+	//	return -1;
+	//}
 	
 	return 0;
 }
