@@ -22,16 +22,18 @@
 #include <stdbool.h>
    
 #include "slave/debug.h"
-#include "slave/debug.c" 
+#include "slave/debug.c" 	//home of the DEBUG function
 #include "y.PIC.h"
-#include "slave/commands.h"
-#include "drivers/i2c_helper.c"
+#include "slave/commands.h"	//pin and constant definitions
+#include "drivers/i2c_helper.c"	//i2c shared functions
 #include "drivers/limit_sw.h"
 #include "drivers/limit_sw.c"
 #include "drivers/sx1509.h"
-#include "drivers/sx1509.c"
+#include "drivers/sx1509.c"	//controls wiper(W) and LED strips
+#include "drivers/mcp4451.h"
+#include "drivers/mcp4451.c"	//controls laser power supplies
 #include "drivers/axis_config.h"
-#include "drivers/axis_config.c"
+#include "drivers/axis_config.c"//calculates stepers per mm for each axis
 
     
 #ifndef TEST_BUILD
@@ -56,9 +58,12 @@
 // globals (don't hate):
 FILE *fcomp; // compiled output (/tmp file)
 int i2cfile;
-    
+
+// I2C bus ID global varibles    
 // SX1509 Driver:
 int sx = -1;
+// MCP4451 Driver
+int mcp = -1;
     
 // position storage (shared pthread memory)
 double pos_x = 0.0;
@@ -217,8 +222,14 @@ int sanity(int argc, char **argv) {
     lockouts.v = LOCKOUT_NULL;
     
     // set up driver(s):
+    // SX1509 - wiper and LEDs
     if((sx = initializeDevice()) == -1) {
         eprintf("\"Fatal issue involving the driver\"\n-Princess Diana");
+        pthread_exit(NULL);
+    }
+    // MCP 4451 - laser power supply
+    if((mcp = initializeMCP()) == -1) {
+        eprintf("\"Fatal issue involving the driver, also we ran out of coke\"\n-Charlie Sheen");
         pthread_exit(NULL);
     }
     

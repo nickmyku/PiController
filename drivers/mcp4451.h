@@ -5,7 +5,7 @@
 //Created May 26, 2014
 
 //prototype functions
-int intitializeMCP();
+int initializeMCP();
 /*
 	returns -1 if I2C connection can not be established
 	

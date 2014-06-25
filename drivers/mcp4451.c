@@ -74,7 +74,7 @@ int main (void)
 }
 #endif	/* MCP4451_MAIN */
 
-int intitializeMCP()
+int initializeMCP()
 {
 	int device;
 	
