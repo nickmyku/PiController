@@ -24,10 +24,12 @@ const int POT3		= 0x07;
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
+#include<stdarg.h>
+
 #include "../slave/debug.h"	//DEBUG function, if -DDEBUG_Flag option is used
 #include "../slave/debug.c"	//DEBUG function
 #include "../slave/commands.h"
-#include "i2c_helper.c"	//helper functions and definitions for i2c
+#include "i2c_helper.c"		//helper functions and definitions for i2c
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
 #include "mcp4451.h"
@@ -184,6 +186,8 @@ int setVoltage(int device, int supply, double voltage){
 	}
 	
 	setPotValue(device, pot_reg, voltage_255);
+	
+	return 1;
 
 
 }
@@ -216,6 +220,8 @@ int setCurrent(int device, int supply, double current){
 	
 	
 	setPotValue(device, pot_reg, current_255);
+	
+	return 1;
 	
 
 
