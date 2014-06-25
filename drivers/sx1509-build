@@ -1,0 +1,3 @@
+#!/bin/bash
+# file for building sx1509 driver standalone
+gcc sx1509.c -o sx1509 -DDEBUG_FLAG -DSX1509_MAIN -lm -lwiringPi
