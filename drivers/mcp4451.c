@@ -5,19 +5,18 @@
 //Nicholas Mykulowycz
 //Created May 26, 2014
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <math.h>
-
-#include "i2c_helper.c"		//helper functions and definitions for i2c
 
 /*	following includes need to be in parent file	*/ 
-#include "../slave/debug.h"	//DEBUG function
-#include "../slave/debug.c"	//DEBUG function
-#include "../slave/commands.h"
-#include <wiringPi.h>
-#include <wiringPiI2C.h>
-#include "mcp4451.h"
+//#include <stdio.h>
+//#include <stdbool.h>
+//#include <math.h>
+//#include "../slave/debug.h"	//DEBUG function
+//#include "../slave/debug.c"	//DEBUG function
+//#include "../slave/commands.h"
+//#include "i2c_helper.c"	//helper functions and definitions for i2c
+//#include <wiringPi.h>
+//#include <wiringPiI2C.h>
+//#include "mcp4451.h"
 
 
 //mcp4451 internal register address
@@ -33,7 +32,7 @@ const int POT3		= 0x07;
 #define MAX_LASER_CURR	(double)20.0	//max current for 15W oclaro MEA-200
 #define LASER_VOLT	(double)5.0	//kind of arbitrary, laser diode only ever reaches ~3V
 
-#ifdef MCP_DRIVER_MAIN
+#ifdef MCP4451_MAIN
 int main (void)
 {
 	//create identifier for digital potentiometer
@@ -71,7 +70,7 @@ int main (void)
 	
 
 }
-#endif	/* MCP_DRIVER_MAIN */
+#endif	/* MCP4451_MAIN */
 
 int intitializeMCP()
 {

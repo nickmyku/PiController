@@ -12,12 +12,14 @@
 #include <math.h>
 #include <time.h>
 
-#include "i2c_helper.c"		//helper functions and definitions for i2c
 
-/*	following includes need to be in parent file	*/ 
-//include "../y.PIC.h" // DEBUG()
-//include "../slave/commands.h"
-//include <wiringPi>
+
+/*	following includes need to be in parent file	*/
+//#include "i2c_helper.c"	//helper functions and definitions for i2c 
+//#include "../slave/debug.h"	//DEBUG functions
+//#include "../slave/debug.c"	//DEBUG functions
+//#include "../slave/commands.h"
+//#include <wiringPi>
 
 #ifdef __clang__
 __has_feature(cxx_binary_literals)
@@ -60,7 +62,7 @@ int REGTRISE[16] =	{   0,   0,   0,   0,0x38,0x3d,0x42,0x47,   0,   0,   0,   0,
 int REGTFALL[16] =	{   0,   0,   0,   0,0x39,0x3e,0x43,0x48,   0,   0,   0,   0,0x59,0x5e,0x63,0x68};
 
 /* Commented out via macro */
-#ifdef DRIVER_MAIN
+#ifdef SX1509_MAIN
 int main (void)
 {
 	//create identifier for sx1509 io expander
@@ -73,8 +75,8 @@ int main (void)
 	if((sx = wiringPiI2CSetup(SXADDR)) == -1)
 	{
 		fprintf(stderr, "sx: unable to initialize I2C %s, activating self destruct sequence\n", strerror (errno));
-		printf("error: function \"selfDestruct()\" not defined in scope of program\n");
-		printf("alright fine you win this time\n");
+		DEBUG("error: function \"selfDestruct()\" not defined in scope of program\n");
+		DEBUG("alright fine you win this time\n");
 		return -1;
 	}
 	*/
@@ -83,7 +85,7 @@ int main (void)
 	//calls function which sets input and output pin parameters
 	if(initPinMode(sx) != 0)
 	{
-		printf("error setting up pin modes\n");
+		DEBUG("error setting up pin modes\n");
 		
 		return -1;
 	}
@@ -113,14 +115,14 @@ int main (void)
 	
 	moveToLimit(sx, false, 200, true);	
 	
-	printf("W limit 0 depressed - %d\n", readWLimit(sx, 0));
-	printf("W limit 1 depressed - %d\n", readWLimit(sx, 1));
+	DEBUG("W limit 0 depressed - %d\n", readWLimit(sx, 0));
+	DEBUG("W limit 1 depressed - %d\n", readWLimit(sx, 1));
 	
-	printf("program complete\n");
+	DEBUG("program complete\n");
 
 	return 0;
 }
-#endif /* DRIVER_MAIN */
+#endif /* SX1509_MAIN */
 
 int initializeDevice ()
 {
