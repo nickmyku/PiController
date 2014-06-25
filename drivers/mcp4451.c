@@ -1,4 +1,5 @@
 #ifndef MCP4451_C_
+#define MCP4451_C_
 //driver for the mcp4451 digital potentiometer chip
 //used to control sorensen DCS60-18 supplies - they will power the laser
 //Nicholas Mykulowycz
@@ -11,7 +12,8 @@
 #include "i2c_helper.c"		//helper functions and definitions for i2c
 
 /*	following includes need to be in parent file	*/ 
-#include "../y.PIC.h" // DEBUG()
+#include "../slave/debug.h"	//DEBUG function
+#include "../slave/debug.c"	//DEBUG function
 #include "../slave/commands.h"
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
@@ -53,14 +55,14 @@ int main (void)
 	
 	//setPotValue(mcp, TCON0, 255);
 	
-	setLaserPower(mcp, 0);
+	//setLaserPower(mcp, 0);
 	
 	volt0 = getVoltage(mcp, 0);
 	volt1 = getVoltage(mcp, 1);
 	curr0 = getCurrent(mcp, 0);
 	curr1 = getCurrent(mcp, 1);
-	printf("---Supply 0---\nVoltage: %f\nCurrent: %f\n\n", volt0, curr0);
-	printf("---Supply 1---\nVoltage: %f\nCurrent: %f\n\n", volt1, curr1);
+	DEBUG("---Supply 0---\nVoltage: %f\nCurrent: %f\n\n", volt0, curr0);
+	DEBUG("---Supply 1---\nVoltage: %f\nCurrent: %f\n\n", volt1, curr1);
 	
 	
 	
@@ -101,7 +103,7 @@ int setLaserPower(int device, double precent){
 		return 1;
 	}
 	else{
-		printf("how about next time you try selecting a laser power thats actually in range\n");
+		DEBUG("how about next time you try selecting a laser power thats actually in range\n");
 		return -1;
 	}
 
@@ -147,7 +149,7 @@ int setLaserCurrent(int device, double current, bool dual_supply){
 	}
 	//if requested laser current is greater than software defined max, throw error
 	else{
-		printf("does %f sound 'less than or equal to' %f to you?\n", current, MAX_LASER_CURR);
+		DEBUG("does %f sound 'less than or equal to' %f to you?\n", current, MAX_LASER_CURR);
 		return -1;
 	}
 		
@@ -170,7 +172,7 @@ int setVoltage(int device, int supply, double voltage){
 			pot_reg = POT3;
 			break;
 		default:
-			printf("you humans are always asking the world of me, that power supply doesnt even exist\n");
+			DEBUG("you humans are always asking the world of me, that power supply doesnt even exist\n");
 			return -1;
 	}
 	
@@ -201,7 +203,7 @@ int setCurrent(int device, int supply, double current){
 			pot_reg = POT1;
 			break;
 		default:
-			printf("you humans are always asking the world of me, that power supply doesnt even exist\n");
+			DEBUG("you humans are always asking the world of me, that power supply doesnt even exist\n");
 			return -1;
 	}
 	
@@ -228,11 +230,11 @@ int scaleTo255(double value, double max_value){
 	//if desired value is greater than max value then return max value
 	if(value > max_value){
 		value_255 = 0;		//scale is inverted so 0 is max value
-		printf("you want %f?!?! I suppose you will never be happy with %f, this relationship is over\n", value, max_value);
+		DEBUG("you want %f?!?! I suppose you will never be happy with %f, this relationship is over\n", value, max_value);
 	}
 	else if(value < 0){
 		value_255 = 255;
-		printf("user asked for negative value, is user drunk(Y/n)?\n");
+		DEBUG("user asked for negative value, is user drunk(Y/n)?\n");
 	}
 	else{
 		temp = (value/max_value)*255;
@@ -263,7 +265,7 @@ double getVoltage(int device, int supply){
 			pot_reg = POT3;
 			break;
 		default:
-			printf("you humans are always asking the world of me, that power supply doesnt even exist\n");
+			DEBUG("you humans are always asking the world of me, that power supply doesnt even exist\n");
 			return -1;
 	}
 	
@@ -313,7 +315,7 @@ double getCurrent(int device, int supply){
 			pot_reg = POT1;
 			break;
 		default:
-			printf("you humans are always asking the world of me, that power supply doesnt even exist\n");
+			DEBUG("you humans are always asking the world of me, that power supply doesnt even exist\n");
 			return -1;
 	}
 
