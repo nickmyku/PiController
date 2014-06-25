@@ -22,6 +22,7 @@
 #include "slave/debug.c" 
 #include "handy.h"
 #include "slave/commands.h" 		/* for the pin definitions  */
+#include "drivers/i2c_helper.c"		/* helper functions for i2c devices */
 #include "drivers/axis_config.h"	/* defines motor parameters */
 #include "drivers/axis_config.c"
 #include "drivers/sx1509.h"		/* driver for W axis and LEDs */

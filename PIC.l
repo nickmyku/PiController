@@ -25,6 +25,7 @@
 #include "slave/debug.c" 
 #include "y.PIC.h"
 #include "slave/commands.h"
+#include "drivers/i2c_helper.c"
 #include "drivers/limit_sw.h"
 #include "drivers/limit_sw.c"
 #include "drivers/sx1509.h"

@@ -16,14 +16,6 @@
 #define AXIS_Y = 1
 #define AXIS_Z = 2
 
-// use this to provide dev-only feedback. See printDebug() too.
-
-//#define DEBUG(fmt, ...)\
-//do {\
-//    printDebug(fmt, __LINE__, __FILE__, ## __VA_ARGS__);\
-//} while(0)
-
-
 // sanity check at program startup
 int sanity(int argc, char **argv);
 
@@ -32,12 +24,6 @@ void calibrate();
 
 // runs compiled Gcode, essentially
 int printOut();
-
-// don't call this - call DEBUG() instead
-//void printDebug(const char *fmt, const int line, const char *file, ...);
-
-// error print function, works like printf()
-//void eprintf(const char *fmt, ...);
 
 // called by lexer when axes updated
 void axis_updated();
