@@ -2,14 +2,14 @@
 //created by Nicholas Mykulowycz
 //created on june 24, 2014
 
+#ifdef DEBUG_MAIN
+
+/*	following includes need to be in parent file	*/ 
 #include <stdio.h>
 #include <errno.h>
 #include <stdarg.h>
+#include "debug.h"
 
-
-//#include "debug.h"
-
-#ifdef DEBUG_MAIN
 int main(void){
 
 	DEBUG("using the debug statement to check if the debug function is working - classic\n");
