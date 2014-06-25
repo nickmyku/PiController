@@ -20,7 +20,9 @@
 #include <math.h>
 #include <unistd.h>
 #include <stdbool.h>
-    
+   
+#include "slave/debug.h"
+#include "slave/debug.c" 
 #include "y.PIC.h"
 #include "slave/commands.h"
 #include "drivers/limit_sw.h"
@@ -296,42 +298,8 @@ void calibrate() {
 }
 
 /*
- * Prettyful debug function 
- * (DO NOT CALL THIS DIRECTLY - use DEBUG() instead, or else tiny elves will feast on your toes)
- */
-void printDebug(const char *fmt, const int line, const char *file, ...) {
-#ifdef DEBUG_FLAG
-    va_list list;
-    va_start(list, file);
-
-    fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
-    vfprintf(stderr, fmt, list);
-    putc('\n',stderr);
-    
-    va_end(list);
-#endif /* DEBUG_FLAG */
-}
-
-/*
- * Error function (called regardless of DEBUG flag to let user know they fucked up)
- */
-void eprintf(const char *fmt, ...) {
-    va_list list;
-    va_start(list, fmt);
-    char *prefix = "ERROR: ";
-    
-    fprintf(stderr, prefix);
-    vfprintf(stderr, fmt, list);
-#warning ignore the "format not a string literal" bullshit
-    fputc('\n', stderr);
-    
-    va_end(list);
- }
-
-/*
  * Thread entry point for moving the Y axis simultaneously with the X axis
  */
-
 
 void *simul_y(void *targv) {
     double i;

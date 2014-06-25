@@ -18,7 +18,8 @@
 #include <stdbool.h>
 #include <wiringPi.h>
 
-
+#include "slave/debug.h"
+#include "slave/debug.c" 
 #include "handy.h"
 #include "slave/commands.h" 		/* for the pin definitions  */
 #include "drivers/axis_config.h"	/* defines motor parameters */
@@ -316,26 +317,6 @@ void *lim_watchdog(void* ignored) {
         
         pthread_yield_np();
     }
-}
-
-
-/*
- * Prettyful debug function 
- * (DO NOT CALL THIS DIRECTLY - use DEBUG() instead, or else tiny elves will feast on your toes)
- */ 
- 
-
-void printDebug(const char *fmt, const int line, const char *file, ...) {
-#ifdef DEBUG_FLAG
-    va_list list;
-    va_start(list, file);
-
-    fprintf(stderr, "Debug: on line %d of file %s: ", line, file);
-    vfprintf(stderr, fmt, list);
-    putc('\n',stderr);
-    
-    va_end(list);
-#endif /* DEBUG_FLAG */
 }
 
 
