@@ -7,6 +7,7 @@
 #ifndef DEBUG_H_
 #define DEBUG_H_
 
+//remember to use the -DDEBUG_FLAG option when compiling kids!
 // use this to provide dev-only feedback. See printDebug() too.
 #define DEBUG(fmt, ...)\
 do {\

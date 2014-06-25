@@ -6,19 +6,6 @@
 //Created May 26, 2014
 
 
-/*	following includes need to be in parent file	*/ 
-//#include <stdio.h>
-//#include <stdbool.h>
-//#include <math.h>
-//#include "../slave/debug.h"	//DEBUG function
-//#include "../slave/debug.c"	//DEBUG function
-//#include "../slave/commands.h"
-//#include "i2c_helper.c"	//helper functions and definitions for i2c
-//#include <wiringPi.h>
-//#include <wiringPiI2C.h>
-//#include "mcp4451.h"
-
-
 //mcp4451 internal register address
 const int MCPADDR	= 0x2f;		//address' assume A0 and A1 are set to 1
 const int TCON0		= 0x04;
@@ -33,6 +20,19 @@ const int POT3		= 0x07;
 #define LASER_VOLT	(double)5.0	//kind of arbitrary, laser diode only ever reaches ~3V
 
 #ifdef MCP4451_MAIN
+/*	following includes need to be in parent file	*/ 
+#include <stdio.h>
+#include <stdbool.h>
+#include <math.h>
+#include "../slave/debug.h"	//DEBUG function, if -DDEBUG_Flag option is used
+#include "../slave/debug.c"	//DEBUG function
+#include "../slave/commands.h"
+#include "i2c_helper.c"	//helper functions and definitions for i2c
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
+#include "mcp4451.h"
+
+
 int main (void)
 {
 	//create identifier for digital potentiometer

@@ -3,24 +3,6 @@
 //Nicholas Mykulowycz
 //Created April 20, 2014
 
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <math.h>
-#include <time.h>
-
-
-
-/*	following includes need to be in parent file	*/
-//#include "i2c_helper.c"	//helper functions and definitions for i2c 
-//#include "../slave/debug.h"	//DEBUG functions
-//#include "../slave/debug.c"	//DEBUG functions
-//#include "../slave/commands.h"
-//#include <wiringPi>
-
 #ifdef __clang__
 __has_feature(cxx_binary_literals)
 #endif
@@ -63,6 +45,22 @@ int REGTFALL[16] =	{   0,   0,   0,   0,0x39,0x3e,0x43,0x48,   0,   0,   0,   0,
 
 /* Commented out via macro */
 #ifdef SX1509_MAIN
+
+/*	following includes need to be in parent file	*/
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <math.h>
+#include <time.h>
+#include "i2c_helper.c"	//helper functions and definitions for i2c 
+#include "../slave/debug.h"	//DEBUG functions
+#include "../slave/debug.c"	//DEBUG functions
+#include "../slave/commands.h"
+#include <wiringPi>
+
 int main (void)
 {
 	//create identifier for sx1509 io expander
