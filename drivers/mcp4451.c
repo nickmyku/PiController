@@ -14,9 +14,9 @@ const int POT0		= 0x00;
 const int POT1		= 0x01;
 const int POT2		= 0x06;
 const int POT3		= 0x07;
-#define MAX_VOLT	(double)60.0	//maximum voltage setting on supply (DCS60-18E)
-#define MAX_CURR	(double)18.0	//maximum current setty on supply (DCS60-18E)
-#define MAX_LASER_CURR	(double)20.0	//max current for 15W oclaro MEA-200
+#define MAX_VOLT	(double)8.0	//maximum voltage setting on supply (DCS8-125E)
+#define MAX_CURR	(double)125.0	//maximum current setty on supply (DCS8-125E)
+#define MAX_LASER_CURR	(double)30.0	//big safety margin here, max diode current is like 65A
 #define LASER_VOLT	(double)5.0	//kind of arbitrary, laser diode only ever reaches ~3V
 
 #ifdef MCP4451_MAIN
@@ -100,7 +100,7 @@ int setLaserPower(int device, double precent){
 		//multiply max laser current by precentage of power
 		current = MAX_LASER_CURR * precent;
 		//send command
-		setLaserCurrent(device, current, true);
+		setLaserCurrent(device, current);
 		return 1;
 	}
 	else{
@@ -112,40 +112,22 @@ int setLaserPower(int device, double precent){
 }
 
 //set the output current of the supplies for the laser
-int setLaserCurrent(int device, double current, bool dual_supply){
+int setLaserCurrent(int device, double current){
 	
 	if(current <= 0){
-		if(dual_supply){
-			//set voltages to 0
-			setVoltage(device, 0 ,0);
-			setVoltage(device, 1, 0);
-			//set currens to 0
-			setCurrent(device, 0, 0);
-			setCurrent(device, 1, 0);
-		}
-		else{
-			//set voltage to 0
-			setVoltage(device, 0, 0);
-			//set current to 0
-			setCurrent(device, 0 ,0);
-		}
+		//set voltage to 0
+		setVoltage(device, 0, 0);
+		//set current to 0
+		setCurrent(device, 0 ,0);
+		
 		//short out laser pins - power supplies dont actually go to 0
 		digitalWrite(LASER_PIN, 0);
 		return 0;
 	}
 	//as long as requested current is below mx send commands
 	else if(current <= MAX_LASER_CURR){
-		//if both supplies are in use divide current by 2 and send commands
-		if(dual_supply){
-			setCurrent(device, 0, (current/2));
-			setCurrent(device, 1, (current/2));
-			setVoltage(device, 0, LASER_VOLT);
-			setVoltage(device, 1, LASER_VOLT);
-		}
-		//otherwise just send current command
-		else{
-			setCurrent(device, 0, current);
-		}
+		//send current command
+		setCurrent(device, 0, current);
 		return 1;
 	}
 	//if requested laser current is greater than software defined max, throw error
