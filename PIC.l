@@ -352,7 +352,7 @@ void axis_updated() {
     double i;
     
     DEBUG("\nFrom: <%f,%f,%f,%f> to <%f,%f,%f,%f>",last_pos_x, last_pos_y, last_pos_z, last_pos_v, pos_x, pos_y, pos_z, pos_v);
-    DEBUG("\nSetting laser to %s", l_power);
+    DEBUG("\nSetting laser to %f", l_power);
     setLaserPower(mcp, l_power);
     
     
@@ -638,6 +638,7 @@ void cleanup() {
     digitalWrite(Z_DIR_PIN,0);
     digitalWrite(V_DIR_PIN,0);
     digitalWrite(LASER_PIN,0);
+    setLaserPower(mcp, 0.0);
     fclose(fcomp);
     system("sync");
 }
