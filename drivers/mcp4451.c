@@ -191,6 +191,11 @@ int setCurrent(int device, int supply, double current){
 	
 	current_255 = scaleTo255(current, MAX_CURR);
 	
+	//scale to correct for error in resistance at high currents
+	if(current_255 > 0 && current_255 < 255){
+		current_255++;
+	}
+	
 	//255 is the 0 current value, set pot function interperates 256 as 511
 	//and further lowers current
 	if(current_255 ==255){
@@ -322,6 +327,11 @@ double getCurrent(int device, int supply){
 	
 	//convert sane boolean array back to integer
 	current_255 = bitsToInt(little_bits);
+	
+	//scale to correct for error in resistance at high currents
+	if(current_255 > 0 && current_255 < 255){
+		current_255--;
+	}
 	
 	current = scaleToHuman(current_255, MAX_CURR);
 	
