@@ -20,7 +20,7 @@ int setLaserPower(int device, double precent);
 
 */
 
-int setLaserCurrent(int device, double current, bool dual_supply);
+int setLaserCurrent(int device, double current);
 /*
 	returns 0 if requested current was less than or equal to 0
 	
