@@ -45,25 +45,22 @@ int main (void)
 	double curr0;
 	double curr1;
 	
-	mcp = intitializeMCP();
+	mcp = initializeMCP();
 	
-	//setVoltage(mcp, 0, 0);
-	//setVoltage(mcp, 1, 0);
-	//setCurrent(mcp, 0, 0.0);
-	//setCurrent(mcp, 1, 0.0);
+	setVoltage(mcp, 0, 0.0);
+	setCurrent(mcp, 0, 0.0);
 	
-	//setLaserCurrent(mcp, 21, true);
+	
+	//setLaserCurrent(mcp, 20);
 	
 	//setPotValue(mcp, TCON0, 255);
 	
-	//setLaserPower(mcp, 0);
+	//setLaserPower(mcp, 50);
 	
 	volt0 = getVoltage(mcp, 0);
-	volt1 = getVoltage(mcp, 1);
 	curr0 = getCurrent(mcp, 0);
-	curr1 = getCurrent(mcp, 1);
 	DEBUG("---Supply 0---\nVoltage: %f\nCurrent: %f\n\n", volt0, curr0);
-	DEBUG("---Supply 1---\nVoltage: %f\nCurrent: %f\n\n", volt1, curr1);
+
 	
 	
 	
@@ -104,7 +101,7 @@ int setLaserPower(int device, double precent){
 		return 1;
 	}
 	else{
-		DEBUG("how about next time you try selecting a laser power thats actually in range\n");
+		DEBUG("\nhow about next time you try selecting a laser power thats actually in range\n");
 		return -1;
 	}
 
@@ -132,7 +129,7 @@ int setLaserCurrent(int device, double current){
 	}
 	//if requested laser current is greater than software defined max, throw error
 	else{
-		DEBUG("does %f sound 'less than or equal to' %f to you?\n", current, MAX_LASER_CURR);
+		DEBUG("\ndoes %f sound 'less than or equal to' %f to you?\n", current, MAX_LASER_CURR);
 		return -1;
 	}
 		

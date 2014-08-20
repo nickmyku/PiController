@@ -28,6 +28,7 @@ int setLaserCurrent(int device, double current);
 	
 	returns -1 if the requested current was greater than max current, 
 	also tries to break your will with a sarcastic debug statement insulting your intelligence
+*/
 
 int setVoltage(int device, int supply, double voltage);
 /*
