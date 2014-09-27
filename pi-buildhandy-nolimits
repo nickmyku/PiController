@@ -1,0 +1,8 @@
+#!/bin/bash
+#set pull ups on limits
+gpio mode 24 up
+gpio mode 25 up
+gpio mode 27 up
+gpio mode 29 up
+#compile command
+gcc -o handy -lncurses -lwiringPi -lm handy.c

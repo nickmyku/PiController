@@ -31,10 +31,10 @@
 #define LASER_PIN 1
 
 //Limit Switch Pins
-#define LIM_X 17
-#define LIM_Y 18
-#define LIM_Z 19
-#define LIM_V 20
+#define LIM_X 24
+#define LIM_Y 25
+#define LIM_Z 27
+#define LIM_V 29
 //Limit Switch Related
 #define LIM_TRIGGER 0 /* Limit switch sensor trigger state */
 #define LOCKOUT_NULL 0
