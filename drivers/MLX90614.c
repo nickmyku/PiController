@@ -11,16 +11,12 @@ Creation Date: 10/05/14
 #include "i2c_helper.c"		//helper functions and definitions for i2c
 
 //Defines
-#define MLXADDR 0x5A;
-#define I2C_WRITE  0
-#define I2C_READ  1
-
-
+#define MLXADDR 0x5A; //address for the IR sensor
 
 
 int ReadMLX(void)
 {
-	int MLX;
+	int MLX; //device name
 	int value = 0; //i2c return value from the MLX
 
 	MLX = initializeMLX(); //check to see if device exists and store device name
@@ -35,9 +31,9 @@ int ReadMLX(void)
 
 }
 
-int initializeMLX()
+int initializeMLX(void)
 {
-	int device;
+	int device; //device name
 	
 	if((device = wiringPiI2CSetup(MLXADDR)) == -1)
 	{
