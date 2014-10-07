@@ -19,6 +19,8 @@ Creation Date: 10/05/14
 #include <time.h>
 #include <stdarg.h>
 
+#include "./slave/debug.h"
+#include "./slave/debug.c"
 #include "./slave/commands.h"
 
 //Includes
@@ -27,6 +29,18 @@ Creation Date: 10/05/14
 //Defines
 #define MLXADDR 0x5A; //address for the IR sensor
 
+int initializeMLX(void)
+{
+	int device; //device name
+	
+	if((device = wiringPiI2CSetup(MLXADDR)) == -1)
+	{
+		// error out, caller must handle errors:
+		return -1;
+	}
+	
+	return device;
+}
 
 int main(void)
 {
@@ -47,16 +61,4 @@ int main(void)
 
 }
 
-int initializeMLX(void)
-{
-	int device; //device name
-	
-	if((device = wiringPiI2CSetup(MLXADDR)) == -1)
-	{
-		// error out, caller must handle errors:
-		return -1;
-	}
-	
-	return device;
-}
 #endif
