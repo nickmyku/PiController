@@ -21,7 +21,6 @@ Creation Date: 10/05/14
 
 #include "./slave/debug.h"
 #include "./slave/debug.c"
-#include "./slave/commands.h"
 
 //Includes
 #include "i2c_helper.c"		//helper functions and definitions for i2c
