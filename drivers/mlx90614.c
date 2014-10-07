@@ -28,6 +28,18 @@ Creation Date: 10/05/14
 //Defines
 #define MLXADDR 0x5A; //address for the IR sensor
 
+int main(void)
+{
+	int MLX; //device name
+	MLX = initializeMLX();
+
+	float temp = IRreadTemp(MLX);
+	printf("%f \n", temp);
+}
+
+
+#endif
+
 int initializeMLX(void)
 {
 	int device; //device name
@@ -41,14 +53,13 @@ int initializeMLX(void)
 	return device;
 }
 
-int main(void)
+float IRreadTemp(int dev)
 {
-	int MLX; //device name
 	int value = 0; //i2c return value from the MLX
 
 	MLX = initializeMLX(); //check to see if device exists and store device name
 
-	writeReg(MLX,MLXADDR,0x07); //command
+	writeReg(dev,MLXADDR,0x07); //command
 
 	//Read the raw temp value and convert to something useful
 	value = readDoubleReg(MLX,MLXADDR); //Read data from MLX
@@ -56,8 +67,6 @@ int main(void)
 	double TempData = value * 0.02; // value * 0.02 gives kelvin
 	float Celcius = tempData - 273.15; //kelvin - 273.15 gives Celcius
 
-	printf("%f \n", Celcius);
+	return Celcius
 
 }
-
-#endif

@@ -8,5 +8,7 @@ H FILE
 */
 #ifndef MLX90614_H_
 int initializeMLX(void);
+float IRreadTemp(int dev);
+
 
 #endif
