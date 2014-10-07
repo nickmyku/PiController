@@ -8,6 +8,18 @@ Creation Date: 10/05/14
 */
 
 #ifdef MLX90614_MAIN
+//special includes
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <math.h>
+#include <time.h>
+#include <stdarg.h>
+
+#include "./slave/commands.h"
 
 //Includes
 #include "i2c_helper.c"		//helper functions and definitions for i2c
