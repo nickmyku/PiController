@@ -31,7 +31,7 @@ Creation Date: 10/05/14
 int main(void)
 {
 	int MLX; //device name
-	MLX = initializeMLX();
+	MLX = initializeMLX(); //check to see if device exists and store device name
 
 	float temp = IRreadTemp(MLX);
 	printf("%f \n", temp);
@@ -58,8 +58,6 @@ int initializeMLX(void)
 float IRreadTemp(int dev)
 {
 	int value = 0; //i2c return value from the MLX
-
-	MLX = initializeMLX(); //check to see if device exists and store device name
 
 	writeReg(dev,MLXADDR,0x07); //command
 
