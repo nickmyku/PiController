@@ -1,0 +1,3 @@
+#!/bin/bash
+# file for building mlx90614 driver standalone
+gcc mlx90614.c -o mlx90614 -DEBUG_FLAG -MLX90614_MAIN -lm -lwiringPi

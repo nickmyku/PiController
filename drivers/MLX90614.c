@@ -7,6 +7,8 @@ Creation Date: 10/05/14
 
 */
 
+#ifdef MLX90614_MAIN
+
 //Includes
 #include "i2c_helper.c"		//helper functions and definitions for i2c
 
@@ -14,7 +16,7 @@ Creation Date: 10/05/14
 #define MLXADDR 0x5A; //address for the IR sensor
 
 
-int ReadMLX(void)
+int main(void)
 {
 	int MLX; //device name
 	int value = 0; //i2c return value from the MLX
