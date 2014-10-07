@@ -26,7 +26,7 @@ Creation Date: 10/05/14
 #include "i2c_helper.c"		//helper functions and definitions for i2c
 
 //Defines
-#define MLXADDR 0x5A; //address for the IR sensor
+
 
 int main(void)
 {
@@ -39,6 +39,8 @@ int main(void)
 
 
 #endif
+
+#define MLXADDR 0x5A; //address for the IR sensor
 
 int initializeMLX(void)
 {
@@ -65,8 +67,8 @@ float IRreadTemp(int dev)
 	value = readDoubleReg(MLX,MLXADDR); //Read data from MLX
 
 	double TempData = value * 0.02; // value * 0.02 gives kelvin
-	float Celcius = tempData - 273.15; //kelvin - 273.15 gives Celcius
+	float Celcius = TempData - 273.15; //kelvin - 273.15 gives Celcius
 
-	return Celcius
+	return Celcius;
 
 }
