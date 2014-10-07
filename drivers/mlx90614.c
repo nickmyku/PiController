@@ -47,3 +47,4 @@ int initializeMLX(void)
 	
 	return device;
 }
+#endif
