@@ -31,6 +31,8 @@ int main(void)
 	double TempData = value * 0.02; // value * 0.02 gives kelvin
 	float Celcius = tempData - 273.15; //kelvin - 273.15 gives Celcius
 
+	printf("%f \n", Celcius);
+
 }
 
 int initializeMLX(void)
