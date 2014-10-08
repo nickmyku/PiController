@@ -62,7 +62,7 @@ float IRreadTemp(int dev)
 	writeReg(dev,MLXADDR,0x07); //command
 
 	//Read the raw temp value and convert to something useful
-	value = readDoubleReg(MLX,MLXADDR); //Read data from MLX
+	value = readDoubleReg(dev,MLXADDR); //Read data from MLX
 
 	double TempData = value * 0.02; // value * 0.02 gives kelvin
 	float Celcius = TempData - 273.15; //kelvin - 273.15 gives Celcius
