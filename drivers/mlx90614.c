@@ -21,7 +21,8 @@ Creation Date: 10/05/14
 
 #include "./slave/debug.h"
 #include "./slave/debug.c"
-
+//Includes
+#include "i2c_helper.c"		//helper functions and definitions for i2c
 //Defines
 
 
@@ -38,9 +39,6 @@ int main(void)
 #endif
 
 //#define MLXADDR 0x5A; //address for the IR sensor
-
-//Includes
-#include "i2c_helper.c"		//helper functions and definitions for i2c
 
 int initializeMLX(void)
 {
