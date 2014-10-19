@@ -34,11 +34,9 @@ int main(void)
 {
 	int MLX; //device name
 	MLX = initializeMLX(); //check to see if device exists and store device name
-
-	printf("%d",MLX);
 	
-	//float temp = IRreadTemp(MLX);
-	//printf("%f \n", temp);
+	float temp = IRreadTemp(MLX);
+	printf("%f \n", temp);
 }
 
 
