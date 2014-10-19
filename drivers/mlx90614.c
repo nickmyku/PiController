@@ -37,8 +37,8 @@ int main(void)
 
 	printf("%d",MLX);
 	
-	float temp = IRreadTemp(MLX);
-	printf("%f \n", temp);
+	//float temp = IRreadTemp(MLX);
+	//printf("%f \n", temp);
 }
 
 
