@@ -62,6 +62,8 @@ float IRreadTemp(int dev)
 	int value = 0; //i2c return value from the MLX
 
 	writeReg(dev,0x5A,0x07); //command
+	writeReg(dev,0x5A,0x07); //command
+
 
 	//Read the raw temp value and convert to something useful
 	value = readDoubleReg(dev,0x5A); //Read data from MLX
