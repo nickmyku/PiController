@@ -23,6 +23,8 @@ Creation Date: 10/05/14
 #include "./slave/debug.c"
 //Includes
 #include "i2c_helper.c"		//helper functions and definitions for i2c
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
 #include "mlx90614.h"
 //Defines
 
