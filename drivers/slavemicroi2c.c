@@ -73,7 +73,7 @@ int writeCommandSlaveMicroI2C(int dev, int command)
 	//writeReg(dev,0x5A,0x07); //command
 }
 
-float readResultSlaveMicroI2C(void)
+float readResultSlaveMicroI2C(int dev)
 {
 	int value = 0;
 
