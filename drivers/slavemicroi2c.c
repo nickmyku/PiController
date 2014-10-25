@@ -15,7 +15,7 @@ Creation Date: 10/25/14
 
 */
 //-------------------------------------------------------------------------------
-#ifdef SLAVEMIRCOI2C_MAIN
+#ifdef SLAVEMICROI2C_MAIN
 //special includes
 #include <stdio.h>
 #include <string.h>
@@ -40,10 +40,10 @@ Creation Date: 10/25/14
 
 int main(void)
 {
-	//int SlaveMicro = 0; //device name
-	//SlaveMicro = initializeSlaveMicroI2C(); //check to see if device exists and store device name
+	int SlaveMicro = 0; //device name
+	SlaveMicro = initializeSlaveMicroI2C(); //check to see if device exists and store device name
 	
-	//wiringPiI2CWrite(SlaveMicro,3);
+	wiringPiI2CWrite(SlaveMicro,3);
 	
 }
 
@@ -51,7 +51,7 @@ int main(void)
 #endif
 //------------------------------------------------------------------------------
 //#define MLXADDR 0x5A; //address for the IR sensor
-/*
+
 int initializeSlaveMicroI2C(void)
 {
 	int device; //device name
@@ -84,4 +84,3 @@ float readResultSlaveMicroI2C(int dev)
 
 	return Celcius;
 }
-*/
