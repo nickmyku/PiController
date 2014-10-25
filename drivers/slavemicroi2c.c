@@ -43,7 +43,7 @@ int main(void)
 	int SlaveMicro = 0; //device name
 	SlaveMicro = initializeSlaveMicroI2C(); //check to see if device exists and store device name
 	
-	wiringPiI2CWrite(SlaveMicro,3);
+	//wiringPiI2CWrite(SlaveMicro,3);
 	
 }
 
@@ -69,7 +69,7 @@ int writeCommandSlaveMicroI2C(int dev, int command)
 {
 	int value = 0;
 	
-	wiringPiI2CWrite(dev,command);
+	//wiringPiI2CWrite(dev,command);
 	//writeReg(dev,0x5A,0x07); //command
 }
 
@@ -77,7 +77,7 @@ float readResultSlaveMicroI2C(int dev)
 {
 	int value = 0;
 
-	value = wiringPiI2CRead(dev);//readDoubleReg(dev,0x5A); //Read data from MLX
+	//value = wiringPiI2CRead(dev);//readDoubleReg(dev,0x5A); //Read data from MLX
 
 	double TempData = value * 0.02; // value * 0.02 gives kelvin
 	float Celcius = TempData - 273.15; //kelvin - 273.15 gives Celcius
