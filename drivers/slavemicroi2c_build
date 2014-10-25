@@ -1,3 +1,3 @@
 #!/bin/bash
 # file for building mlx90614 driver standalone
-gcc SlaveMicroI2C.c -o SlaveMicroI2C -DDEBUG_FLAG -DSLAVEMICROI2C_MAIN -lm -lwiringPi
+gcc slavemicroi2c.c -o slavemicroi2c -DDEBUG_FLAG -DSLAVEMICROI2C_MAIN -lm -lwiringPi
