@@ -56,7 +56,7 @@ int initializeSlaveMicroI2C(void)
 {
 	int device; //device name
 	
-	if((device = wiringPiI2CSetup(0x5A)) == -1)
+	if((device = wiringPiI2CSetup(0x64)) == -1)
 	{
 		// error out, caller must handle errors:
 		return -1;

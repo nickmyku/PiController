@@ -17,5 +17,5 @@ Creation Date: 10/25/14
 #ifndef SLAVEMICROI2C_H_
 int initializeSlaveMicroI2C(void);
 int writeCommandSlaveMicroI2C(int dev, int command);
-float readResultSlaveMicroI2C(void);
+float readResultSlaveMicroI2C(int dev);
 #endif
