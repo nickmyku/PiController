@@ -34,7 +34,7 @@ Creation Date: 10/25/14
 #include "i2c_helper.c"		//helper functions and definitions for i2c
 #include <wiringPi.h>
 #include <wiringPiI2C.h>
-#include "mlx90614.h"
+#include "slavemicroi2c.h"
 //Defines
 
 
