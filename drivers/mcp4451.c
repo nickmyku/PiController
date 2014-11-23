@@ -47,19 +47,22 @@ int main (void)
 	
 	mcp = initializeMCP();
 	
-	setVoltage(mcp, 0, 0.0);
-	setCurrent(mcp, 0, 0.0);
+	//setVoltage(mcp, 1, 2.0);
+	//setCurrent(mcp, 1, 2.0);
 	
 	
 	//setLaserCurrent(mcp, 20);
 	
 	//setPotValue(mcp, TCON0, 255);
 	
-	//setLaserPower(mcp, 50);
+	setLaserPower(mcp, 50);
 	
 	volt0 = getVoltage(mcp, 0);
 	curr0 = getCurrent(mcp, 0);
+	volt1 = getVoltage(mcp, 1);
+	curr1 = getCurrent(mcp, 1);
 	DEBUG("---Supply 0---\nVoltage: %f\nCurrent: %f\n\n", volt0, curr0);
+	DEBUG("---Supply 1---\nVoltage: %f\nCurrent: %f\n\n", volt1, curr1);
 
 	
 	
@@ -83,6 +86,13 @@ int initializeMCP()
 	//enable all potentiometers, if any pins are tri stated power supplies go to max output
 	setPotValue(device, TCON0, 255);
 	setPotValue(device, TCON1, 255);
+
+	//set all currents to zero
+	setCurrent(device, 0, 0);
+	setCurrent(device, 1, 0);
+	//set all voltages to zero
+	setVoltage(device, 0, 0);
+	setVoltage(device, 1, 0);
 	
 	
 	return device;
@@ -111,11 +121,11 @@ int setLaserPower(int device, double precent){
 //set the output current of the supplies for the laser
 int setLaserCurrent(int device, double current){
 	
-	if(current <= 0){
-		//set voltage to 0
-		setVoltage(device, 0, 0);
-		//set current to 0
-		setCurrent(device, 0 ,0);
+  	if(current <= 0){
+		//set voltage to 1
+		setVoltage(device, 1, 0);
+		//set current to 1
+		setCurrent(device, 1 ,0);
 		
 		//short out laser pins - power supplies dont actually go to 0
 		digitalWrite(LASER_PIN, 0);
@@ -124,7 +134,9 @@ int setLaserCurrent(int device, double current){
 	//as long as requested current is below mx send commands
 	else if(current <= MAX_LASER_CURR){
 		//send current command
-		setCurrent(device, 0, current);
+		setCurrent(device, 1, current);
+		//send voltage command
+		setVoltage(device, 1, LASER_VOLT);
 		return 1;
 	}
 	//if requested laser current is greater than software defined max, throw error
