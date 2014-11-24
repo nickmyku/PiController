@@ -32,7 +32,7 @@ void axis_updated();
 //void set_dir(int axis, int dir); //moved to drivers/limit_sw
 
 // turns on and off the laser, mcp4451 now takes care of power level
-int engageLaser(bool active);
+int activateLaser(bool active);
 
 // sets a slave pin high
 int setSlaveHigh(FILE *i2c, int pin);

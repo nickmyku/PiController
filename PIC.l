@@ -32,8 +32,10 @@
 #include "drivers/sx1509.c"	//controls wiper(W) and LED strips
 #include "drivers/mcp4451.h"
 #include "drivers/mcp4451.c"	//controls laser power supplies
+#include "drivers/slave_micro.h"
+#include "drivers/slave_micro.c"	//reads laser temps, enables laser supply
 #include "drivers/axis_config.h"
-#include "drivers/axis_config.c"//calculates stepers per mm for each axis
+#include "drivers/axis_config.c"	//calculates stepers per mm for each axis
 
     
 #ifndef TEST_BUILD
@@ -232,6 +234,17 @@ int sanity(int argc, char **argv) {
         eprintf("\"Fatal issue involving the driver, also we ran out of coke\"\n-Charlie Sheen");
         pthread_exit(NULL);
     }
+
+    // Slave Micrco controller - laser temperature and safety system
+    if((arduino = initializeSlaveMicro()) == -1) {
+        eprintf("\"Fatal issue involving the driver, and the keg is tapped\"\n-Ghandi");
+        pthread_exit(NULL);
+    }
+    // if driver initialized properly then enable the laser power supply
+    else{
+	enableLaser(arduino, 1);
+    }
+	
     
     // set up watchdog thread (limit switch detection)
     lockouts.x = lockouts.y = lockouts.z = lockouts.v = LOCKOUT_NULL;
@@ -458,10 +471,10 @@ void axis_updated() {
     DEBUG("\nTurning laser %s", (l_power > 0.0)?("on"):("off"));
     //actually enable laser if l_power is greater than 0
     if(l_power > 0){
-    	engageLaser(true);
+    	activateLaser(true);
     }
     else{
-    	engageLaser(false);
+    	activateLaser(false);
     }
     
      
@@ -504,7 +517,7 @@ void axis_updated() {
 
     DEBUG("No Mr. Bond, I expect you to (NOT) die!");
     l_power = 0.0;
-    engageLaser(false); // last one out, get the lights
+    activateLaser(false); // last one out, get the lights
 }
 
 
@@ -512,7 +525,7 @@ void axis_updated() {
 /*
  * Turns on the laser - by turning off the short circuit attached to it, efficency at its finest
  */
-int engageLaser(bool active) {
+int activateLaser(bool active) {
 	// leave this in, it has a legitimate purpose I promise
 	// ^ moved to new function at request of above comment ^
 	if(ON_A_SHARK_HEAD) {
@@ -639,6 +652,7 @@ void cleanup() {
     digitalWrite(V_DIR_PIN,0);
     digitalWrite(LASER_PIN,0);
     setLaserPower(mcp, 0.0);
+    enableLaser(arduino, 0)
     fclose(fcomp);
     system("sync");
 }
