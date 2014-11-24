@@ -1,0 +1,3 @@
+#!/bin/bash
+# file for building mcp4451 driver standalone
+gcc startup.c -o startup -DDEBUG_FLAG -lm -lwiringPi
