@@ -66,6 +66,8 @@ int i2cfile;
 int sx = -1;
 // MCP4451 Driver
 int mcp = -1;
+// Arduino Driver
+int arduino = -1;
     
 // position storage (shared pthread memory)
 double pos_x = 0.0;
@@ -242,6 +244,9 @@ int sanity(int argc, char **argv) {
     }
     // if driver initialized properly then enable the laser power supply
     else{
+	// set laser power to 0
+	setLaserPower(mcp, 0.0);
+	// then disengauge power supply safety systems
 	enableLaser(arduino, 1);
     }
 	
@@ -652,7 +657,7 @@ void cleanup() {
     digitalWrite(V_DIR_PIN,0);
     digitalWrite(LASER_PIN,0);
     setLaserPower(mcp, 0.0);
-    enableLaser(arduino, 0)
+    enableLaser(arduino, 0);
     fclose(fcomp);
     system("sync");
 }
