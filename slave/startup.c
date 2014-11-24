@@ -27,7 +27,7 @@
 #include "../drivers/sx1509.h"
 #include "../drivers/sx1509.c"	//controls wiper(W) and LED strips
 
-// I2C bus ID global varibles    
+// I2C bus ID global varibles
 // SX1509 Driver:
 int sx = -1;
 
@@ -35,6 +35,7 @@ int main(void){
 	// init wiring pi library
 	if(wiringPiSetup() == -1) {
 		DEBUG("Pin initialization failed!\n(Do you even root, bro?)\n");
+		return -1;
 	}
 
 	// set up pins modes
@@ -66,21 +67,13 @@ int main(void){
 	// initialize SX1509 - wiper and LEDs
 	if((sx = initializeDevice()) == -1) {
         	DEBUG("\"Fatal issue involving the driver\"\n-Princess Diana");
+		return -2;
 	}
 
+	DEBUG("\n\nMy pins, I can feel them.. changing. Did you do that?\n-self aware computer\n");
+
+	return 0;
 }
-
-
-	
-
-
-
-
-
-
-
-
-
 
 
 #endif  /* STARTUP_C_ */
