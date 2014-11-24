@@ -1,0 +1,3 @@
+#!/bin/bash
+# file for building microcontroller driver standalone
+gcc slave_micro.c -o slave_micro -DDEBUG_FLAG -DSLAVE_MICRO_MAIN -lm -lwiringPi
