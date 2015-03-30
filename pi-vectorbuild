@@ -1,0 +1,4 @@
+#!/bin/bash
+# Use this file when building on the actual Pi
+lex -t PIC-vector.l > PIC.c && gcc -DTEST_BUILD -DDEBUG_FLAG -o PIC_vector PIC.c -ll -lfl -lm -lpthread -lwiringPi
+
